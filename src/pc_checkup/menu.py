@@ -100,4 +100,4 @@ class Menu:
             elif choice == "7":
                 self.toggle_language()
             else:
-                self._say("menu.not_available", Level.WARNING)
+                self._say("menu.not_available", Level.LOG)

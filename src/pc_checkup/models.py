@@ -21,12 +21,11 @@ class SystemEvent:
 
 
 class Level(Enum):
-    """How a line should look: a plain log, a recommendation, or a status color."""
+    """How a line should look: plain text, a log band, or a status color."""
 
     INFO = "info"
-    HINT = "hint"
+    LOG = "log"
     OK = "ok"
-    WARNING = "warning"
     ERROR = "error"
     TECHNICAL = "technical"
 

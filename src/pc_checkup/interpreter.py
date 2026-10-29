@@ -23,7 +23,7 @@ BUGCHECK_NAMES: dict[int, str] = {
     0x124: "WHEA_UNCORRECTABLE_ERROR",
 }
 
-VERDICT_LEVELS = {"ok": Level.OK, "warning": Level.WARNING, "attention": Level.ERROR}
+VERDICT_LEVELS = {"ok": Level.OK, "warning": Level.LOG, "attention": Level.LOG}
 
 # Crash codes that suggest a RAM problem.
 MEMORY_RELATED_CODES = {0x1A, 0x50, 0x7A, 0x124}
@@ -96,13 +96,13 @@ def interpret_bsod(snapshot: BsodSnapshot, language: str) -> Report:
                 when=f"{crash.time:%Y-%m-%d %H:%M}",
                 explanation=_explain(crash.code, language),
             )
-            friendly.append(Line(crash_text, Level.ERROR))
+            friendly.append(Line(crash_text, Level.LOG))
     if shutdowns:
-        friendly.append(Line(_plural("bsod.shutdowns", len(shutdowns), language), Level.WARNING))
+        friendly.append(Line(_plural("bsod.shutdowns", len(shutdowns), language), Level.LOG))
     if hardware:
-        friendly.append(Line(_plural("bsod.hardware", len(hardware), language), Level.WARNING))
+        friendly.append(Line(_plural("bsod.hardware", len(hardware), language), Level.LOG))
     if hardware or any(crash.code in MEMORY_RELATED_CODES for crash in crashes):
-        friendly.append(Line(get_message("bsod.hint.memory", language), Level.HINT))
+        friendly.append(Line(get_message("bsod.hint.memory", language), Level.LOG))
 
     if not (crashes or shutdowns or hardware):
         friendly.append(Line(get_message("bsod.none", language, days=snapshot.days), Level.OK))

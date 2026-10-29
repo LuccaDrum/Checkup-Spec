@@ -1,4 +1,4 @@
-import io
+﻿import io
 from typing import Any
 
 import pytest
@@ -33,12 +33,22 @@ def test_block_uses_the_color_of_its_level() -> None:
     assert styled.block("fine", Level.OK).startswith("\x1b[30;42m")
 
 
+def test_info_and_technical_stay_plain_even_with_color() -> None:
+    styled = Ui(color=True, width=50)
+    assert styled.block("hello", Level.INFO) == "hello"
+    assert styled.block("details", Level.TECHNICAL) == "details"
+
+
+def test_log_band_is_light_gray() -> None:
+    assert Ui(color=True, width=50).block("x", Level.LOG).startswith("\x1b[30;47m")
+
+
 def test_block_pads_every_line_to_the_same_width() -> None:
     styled = Ui(color=True, width=50)
     text = "word " * 30
-    lines = styled.block(text, Level.INFO).split("\n")
+    lines = styled.block(text, Level.LOG).split("\n")
     assert len(lines) > 1
-    visible = [line.removeprefix("\x1b[97;44m").removesuffix(RESET) for line in lines]
+    visible = [line.removeprefix("\x1b[30;47m").removesuffix(RESET) for line in lines]
     assert {len(line) for line in visible} == {50}
 
 

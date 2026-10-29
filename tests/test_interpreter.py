@@ -129,18 +129,18 @@ def test_levels_for_a_clean_report() -> None:
     assert levels(interpret_bsod(snapshot(), "en")) == [Level.OK, Level.OK]
 
 
-def test_crashes_are_errors_and_hint_is_a_recommendation() -> None:
+def test_only_the_crash_count_is_an_error_and_the_rest_is_log() -> None:
     report = interpret_bsod(real_snapshot(), "en")
     assert levels(report) == [
         Level.ERROR,
-        Level.ERROR,
-        Level.ERROR,
-        Level.WARNING,
-        Level.HINT,
-        Level.WARNING,
+        Level.LOG,
+        Level.LOG,
+        Level.LOG,
+        Level.LOG,
+        Level.LOG,
     ]
 
 
-def test_frequent_crashes_end_with_an_error_verdict() -> None:
+def test_frequent_crashes_still_end_with_a_log_verdict() -> None:
     events = [event(EventKind.BUGCHECK, minutes, 0x3B) for minutes in (0, 60, 120)]
-    assert levels(interpret_bsod(snapshot(*events), "en"))[-1] is Level.ERROR
+    assert levels(interpret_bsod(snapshot(*events), "en"))[-1] is Level.LOG

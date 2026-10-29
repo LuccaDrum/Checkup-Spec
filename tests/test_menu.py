@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+﻿from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
 
@@ -154,10 +154,11 @@ def test_color_menu_shows_invalid_input_in_red() -> None:
     assert "not a valid option" in errors[0]
 
 
-def test_color_report_uses_red_for_crashes_cyan_for_hints_and_gray_for_details() -> None:
+def test_color_report_has_red_headline_gray_log_and_plain_details() -> None:
     menu, printed = make_color_menu(["2", "0"], FakeBsodSource(crash_snapshot()))
     menu.run()
     text = "\n".join(printed)
     assert "\x1b[1;97;41m" in text
-    assert "\x1b[30;46m" in text
-    assert "\x1b[97;100m" in text
+    assert "\x1b[30;47m" in text
+    assert "\x1b[97;100m" not in text
+    assert "Technical details:" in printed

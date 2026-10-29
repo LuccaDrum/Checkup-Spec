@@ -17,13 +17,13 @@ RESET = "\x1b[0m"
 BOLD = "\x1b[1m"
 
 # SGR codes: foreground;background (30-37 / 90-97 text, 40-47 / 100-107 background).
-LEVEL_STYLES = {
-    Level.INFO: "97;44",
-    Level.HINT: "30;46",
+# None means plain text with no band.
+LEVEL_STYLES: dict[Level, str | None] = {
+    Level.INFO: None,
+    Level.LOG: "30;47",
     Level.OK: "30;42",
-    Level.WARNING: "30;43",
     Level.ERROR: "1;97;41",
-    Level.TECHNICAL: "97;100",
+    Level.TECHNICAL: None,
 }
 
 MIN_WIDTH = 40
@@ -72,9 +72,9 @@ class Ui:
 
     def block(self, text: str, level: Level = Level.INFO) -> str:
         """Text on a colored band as wide as the menu; long text wraps inside the band."""
-        if not self.color:
-            return text
         style = LEVEL_STYLES[level]
+        if not self.color or style is None:
+            return text
         inner = self.width - 2
         lines = textwrap.wrap(text, inner) or [""]
         return "\n".join(f"\x1b[{style}m {line.ljust(inner)} {RESET}" for line in lines)
