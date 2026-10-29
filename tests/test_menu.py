@@ -124,3 +124,40 @@ def test_option_2_failure_shows_friendly_message_and_keeps_running(tmp_path: Pat
     menu.run()
     assert any("Could not read the Windows event log" in line for line in printed)
     assert printed[-1] == "Goodbye!"
+
+
+def make_color_menu(answers: list[str], source: Source[BsodSnapshot]) -> tuple[Menu, list[str]]:
+    printed: list[str] = []
+    remaining: Iterator[str] = iter(answers)
+    menu = Menu(
+        "en",
+        input_fn=lambda prompt: next(remaining),
+        print_fn=printed.append,
+        bsod_source=source,
+        color=True,
+    )
+    return menu, printed
+
+
+def test_color_menu_has_bold_options_and_separators() -> None:
+    menu, printed = make_color_menu(["0"], FakeBsodSource())
+    menu.run()
+    assert "\x1b[1m2)\x1b[0m Blue screens (last 15 days)" in printed
+    assert "─" in printed[1]
+
+
+def test_color_menu_shows_invalid_input_in_red() -> None:
+    menu, printed = make_color_menu(["abc", "0"], FakeBsodSource())
+    menu.run()
+    errors = [line for line in printed if line.startswith("\x1b[1;97;41m")]
+    assert len(errors) == 1
+    assert "not a valid option" in errors[0]
+
+
+def test_color_report_uses_red_for_crashes_cyan_for_hints_and_gray_for_details() -> None:
+    menu, printed = make_color_menu(["2", "0"], FakeBsodSource(crash_snapshot()))
+    menu.run()
+    text = "\n".join(printed)
+    assert "\x1b[1;97;41m" in text
+    assert "\x1b[30;46m" in text
+    assert "\x1b[97;100m" in text

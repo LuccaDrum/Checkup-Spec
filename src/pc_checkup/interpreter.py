@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from pc_checkup.messages import get_message
-from pc_checkup.models import BsodSnapshot, EventKind, Report
+from pc_checkup.models import BsodSnapshot, EventKind, Level, Line, Report
 
 # All thresholds in one place.
 THRESHOLDS = {
@@ -22,6 +22,8 @@ BUGCHECK_NAMES: dict[int, str] = {
     0xD1: "DRIVER_IRQL_NOT_LESS_OR_EQUAL",
     0x124: "WHEA_UNCORRECTABLE_ERROR",
 }
+
+VERDICT_LEVELS = {"ok": Level.OK, "warning": Level.WARNING, "attention": Level.ERROR}
 
 # Crash codes that suggest a RAM problem.
 MEMORY_RELATED_CODES = {0x1A, 0x50, 0x7A, 0x124}
@@ -83,33 +85,33 @@ def interpret_bsod(snapshot: BsodSnapshot, language: str) -> Report:
     ]
     hardware = snapshot.of_kind(EventKind.HARDWARE_ERROR)
 
-    friendly: list[str] = []
+    friendly: list[Line] = []
     if crashes:
-        friendly.append(_plural("bsod.crashes", len(crashes), language, days=snapshot.days))
+        count_text = _plural("bsod.crashes", len(crashes), language, days=snapshot.days)
+        friendly.append(Line(count_text, Level.ERROR))
         for crash in crashes:
-            friendly.append(
-                get_message(
-                    "bsod.crash_line",
-                    language,
-                    when=f"{crash.time:%Y-%m-%d %H:%M}",
-                    explanation=_explain(crash.code, language),
-                )
+            crash_text = get_message(
+                "bsod.crash_line",
+                language,
+                when=f"{crash.time:%Y-%m-%d %H:%M}",
+                explanation=_explain(crash.code, language),
             )
+            friendly.append(Line(crash_text, Level.ERROR))
     if shutdowns:
-        friendly.append(_plural("bsod.shutdowns", len(shutdowns), language))
+        friendly.append(Line(_plural("bsod.shutdowns", len(shutdowns), language), Level.WARNING))
     if hardware:
-        friendly.append(_plural("bsod.hardware", len(hardware), language))
+        friendly.append(Line(_plural("bsod.hardware", len(hardware), language), Level.WARNING))
     if hardware or any(crash.code in MEMORY_RELATED_CODES for crash in crashes):
-        friendly.append(get_message("bsod.hint.memory", language))
+        friendly.append(Line(get_message("bsod.hint.memory", language), Level.HINT))
 
     if not (crashes or shutdowns or hardware):
-        friendly.append(get_message("bsod.none", language, days=snapshot.days))
+        friendly.append(Line(get_message("bsod.none", language, days=snapshot.days), Level.OK))
         verdict = "ok"
     elif len(crashes) >= THRESHOLDS["crashes_attention"]:
         verdict = "attention"
     else:
         verdict = "warning"
-    friendly.append(get_message(f"bsod.verdict.{verdict}", language))
+    friendly.append(Line(get_message(f"bsod.verdict.{verdict}", language), VERDICT_LEVELS[verdict]))
 
     technical = [get_message("bsod.technical_title", language)]
     for event in sorted(snapshot.events, key=lambda item: item.time, reverse=True):

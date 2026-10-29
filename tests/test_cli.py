@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+﻿from collections.abc import Iterator
 from pathlib import Path
 
 from pc_checkup.cli import main
@@ -22,6 +22,7 @@ def run_main(
         input_fn=lambda prompt: next(remaining),
         print_fn=printed.append,
         config_path=tmp_path / "config.json",
+        color=False,
     )
     return code, printed, relaunches
 

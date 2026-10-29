@@ -1,9 +1,9 @@
-from datetime import datetime, timedelta
+﻿from datetime import datetime, timedelta
 from pathlib import Path
 
 from pc_checkup.interpreter import BUGCHECK_NAMES, group_crashes, interpret_bsod
 from pc_checkup.messages import MESSAGES, get_message
-from pc_checkup.models import BsodSnapshot, EventKind, SystemEvent
+from pc_checkup.models import BsodSnapshot, EventKind, Level, Report, SystemEvent
 from pc_checkup.sources.bsod import parse_events
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -23,6 +23,14 @@ def event(kind: EventKind, minutes: float = 0, code: int | None = None) -> Syste
 
 def snapshot(*events: SystemEvent, dumps: tuple[str, ...] = ()) -> BsodSnapshot:
     return BsodSnapshot(days=15, events=tuple(events), dump_files=dumps)
+
+
+def texts(report: Report) -> list[str]:
+    return [line.text for line in report.friendly]
+
+
+def levels(report: Report) -> list[Level]:
+    return [line.level for line in report.friendly]
 
 
 def real_snapshot() -> BsodSnapshot:
@@ -62,35 +70,35 @@ def test_different_codes_close_together_count_twice() -> None:
 
 def test_no_problems() -> None:
     report = interpret_bsod(snapshot(), "en")
-    assert report.friendly[0].startswith("Good news")
-    assert report.friendly[-1] == "Result: nothing to worry about."
+    assert texts(report)[0].startswith("Good news")
+    assert texts(report)[-1] == "Result: nothing to worry about."
     assert "No recent dump files found." in report.technical
 
 
 def test_real_log_in_english() -> None:
     report = interpret_bsod(real_snapshot(), "en")
-    assert report.friendly[0] == "Your PC crashed 2 times in the last 15 days."
-    assert any("Memory management error" in line for line in report.friendly)
-    assert any("1 unexpected shutdown without a crash code" in line for line in report.friendly)
-    assert any("RAM test (option 4)" in line for line in report.friendly)
-    assert report.friendly[-1].startswith("Result: worth keeping an eye on")
+    assert texts(report)[0] == "Your PC crashed 2 times in the last 15 days."
+    assert any("Memory management error" in line for line in texts(report))
+    assert any("1 unexpected shutdown without a crash code" in line for line in texts(report))
+    assert any("RAM test (option 4)" in line for line in texts(report))
+    assert texts(report)[-1].startswith("Result: worth keeping an eye on")
 
 
 def test_real_log_in_portuguese() -> None:
     report = interpret_bsod(real_snapshot(), "pt")
-    assert report.friendly[0] == "Seu PC travou 2 vezes nos últimos 15 dias."
+    assert texts(report)[0] == "Seu PC travou 2 vezes nos últimos 15 dias."
     assert report.technical[0] == "Detalhes técnicos:"
 
 
 def test_single_crash_uses_singular() -> None:
     report = interpret_bsod(snapshot(event(EventKind.BUGCHECK, 0, 0x3B)), "en")
-    assert report.friendly[0] == "Your PC crashed once in the last 15 days."
-    assert not any("RAM test" in line for line in report.friendly)
+    assert texts(report)[0] == "Your PC crashed once in the last 15 days."
+    assert not any("RAM test" in line for line in texts(report))
 
 
 def test_unknown_code_gets_generic_message_and_raw_code_in_technical() -> None:
     report = interpret_bsod(snapshot(event(EventKind.BUGCHECK, 0, 0x9999)), "en")
-    assert any("0x9999" in line and "not in our list" in line for line in report.friendly)
+    assert any("0x9999" in line and "not in our list" in line for line in texts(report))
     assert any("code=0x9999" in line for line in report.technical)
 
 
@@ -101,17 +109,38 @@ def test_known_code_shows_its_name_in_technical() -> None:
 
 def test_hardware_errors_hint_at_memory() -> None:
     report = interpret_bsod(snapshot(event(EventKind.HARDWARE_ERROR)), "en")
-    assert any("hardware error report" in line for line in report.friendly)
-    assert any("RAM test" in line for line in report.friendly)
+    assert any("hardware error report" in line for line in texts(report))
+    assert any("RAM test" in line for line in texts(report))
 
 
 def test_three_crashes_need_attention() -> None:
     events = [event(EventKind.BUGCHECK, minutes, 0x3B) for minutes in (0, 60, 120)]
     report = interpret_bsod(snapshot(*events), "en")
-    assert report.friendly[0] == "Your PC crashed 3 times in the last 15 days."
-    assert report.friendly[-1].startswith("Result: your PC crashes often")
+    assert texts(report)[0] == "Your PC crashed 3 times in the last 15 days."
+    assert texts(report)[-1].startswith("Result: your PC crashes often")
 
 
 def test_dump_files_are_listed() -> None:
     report = interpret_bsod(snapshot(dumps=("C:\\Windows\\MEMORY.DMP",)), "en")
     assert "Dump file: C:\\Windows\\MEMORY.DMP" in report.technical
+
+
+def test_levels_for_a_clean_report() -> None:
+    assert levels(interpret_bsod(snapshot(), "en")) == [Level.OK, Level.OK]
+
+
+def test_crashes_are_errors_and_hint_is_a_recommendation() -> None:
+    report = interpret_bsod(real_snapshot(), "en")
+    assert levels(report) == [
+        Level.ERROR,
+        Level.ERROR,
+        Level.ERROR,
+        Level.WARNING,
+        Level.HINT,
+        Level.WARNING,
+    ]
+
+
+def test_frequent_crashes_end_with_an_error_verdict() -> None:
+    events = [event(EventKind.BUGCHECK, minutes, 0x3B) for minutes in (0, 60, 120)]
+    assert levels(interpret_bsod(snapshot(*events), "en"))[-1] is Level.ERROR

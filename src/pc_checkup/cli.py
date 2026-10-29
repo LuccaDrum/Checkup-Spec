@@ -7,6 +7,8 @@ from pc_checkup.admin import is_admin, relaunch_elevated
 from pc_checkup.config import load_language
 from pc_checkup.menu import Menu
 from pc_checkup.messages import get_message
+from pc_checkup.models import Level
+from pc_checkup.ui import Ui, supports_color
 
 
 def main(
@@ -15,17 +17,20 @@ def main(
     input_fn: Callable[[str], str] = input,
     print_fn: Callable[[str], None] = print,
     config_path: Path | None = None,
+    color: bool | None = None,
 ) -> int:
     language = load_language(config_path)
+    use_color = supports_color() if color is None else color
+    ui = Ui(use_color)
 
     if not is_admin_fn():
         if relaunch_fn():
             return 0
-        print_fn(get_message("admin.declined", language))
+        print_fn(ui.block(get_message("admin.declined", language), Level.ERROR))
         input_fn(get_message("app.press_enter", language))
         return 1
 
-    menu = Menu(language, input_fn, print_fn, config_path)
+    menu = Menu(language, input_fn, print_fn, config_path, color=use_color)
     menu.run()
     # The elevated window closes when the program ends, so wait before closing.
     input_fn(get_message("app.press_enter", menu.language))

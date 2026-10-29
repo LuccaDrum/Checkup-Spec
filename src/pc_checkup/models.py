@@ -41,7 +41,7 @@ class Line:
 class Report:
     """What the user reads: a friendly part first, technical details below."""
 
-    friendly: tuple[str, ...]
+    friendly: tuple[Line, ...]
     technical: tuple[str, ...] = ()
 
 
