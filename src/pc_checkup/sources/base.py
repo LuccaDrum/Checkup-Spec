@@ -6,6 +6,10 @@ from typing import Generic, TypeVar
 SnapshotT = TypeVar("SnapshotT")
 
 
+class SourceError(Exception):
+    """A source could not read its data (command failed, timed out or returned garbage)."""
+
+
 class Source(ABC, Generic[SnapshotT]):
     """Reads information from the PC and returns a snapshot. Never changes anything."""
 
