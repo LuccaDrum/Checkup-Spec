@@ -28,6 +28,11 @@ MESSAGES: dict[str, dict[str, str]] = {
             "Please run it again and accept the Windows permission prompt."
         ),
         "app.press_enter": "Press Enter to close this window...",
+        "bsod.working": "Reading the Windows event log, this may take a few seconds...",
+        "bsod.read_failed": (
+            "Could not read the Windows event log. Please try again; "
+            "if it keeps failing, ask for technical help."
+        ),
         "bsod.none": "Good news: no blue screens or unexpected shutdowns in the last {days} days.",
         "bsod.crashes.one": "Your PC crashed once in the last {days} days.",
         "bsod.crashes.many": "Your PC crashed {count} times in the last {days} days.",
@@ -113,6 +118,11 @@ MESSAGES: dict[str, dict[str, str]] = {
             "e executar reparos. Execute novamente e aceite o aviso de permissão do Windows."
         ),
         "app.press_enter": "Pressione Enter para fechar esta janela...",
+        "bsod.working": "Lendo o registro de eventos do Windows, pode levar alguns segundos...",
+        "bsod.read_failed": (
+            "Não foi possível ler o registro de eventos do Windows. Tente novamente; "
+            "se continuar falhando, peça ajuda técnica."
+        ),
         "bsod.none": (
             "Boa notícia: nenhuma tela azul ou desligamento inesperado nos últimos {days} dias."
         ),
