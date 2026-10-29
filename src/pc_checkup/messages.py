@@ -23,6 +23,11 @@ MESSAGES: dict[str, dict[str, str]] = {
         "menu.not_available": "This option is not available yet.",
         "menu.goodbye": "Goodbye!",
         "settings.language_changed": "Language changed to English.",
+        "admin.declined": (
+            "PC Checkup needs administrator rights to read system logs and run repairs. "
+            "Please run it again and accept the Windows permission prompt."
+        ),
+        "app.press_enter": "Press Enter to close this window...",
     },
     "pt": {
         "menu.title": "=== PC Checkup ===",
@@ -39,6 +44,11 @@ MESSAGES: dict[str, dict[str, str]] = {
         "menu.not_available": "Esta opção ainda não está disponível.",
         "menu.goodbye": "Até logo!",
         "settings.language_changed": "Idioma alterado para português.",
+        "admin.declined": (
+            "O PC Checkup precisa de direitos de administrador para ler os logs do sistema "
+            "e executar reparos. Execute novamente e aceite o aviso de permissão do Windows."
+        ),
+        "app.press_enter": "Pressione Enter para fechar esta janela...",
     },
 }
 
