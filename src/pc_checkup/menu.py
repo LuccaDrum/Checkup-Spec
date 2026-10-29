@@ -1,6 +1,7 @@
 """Numbered menu: shows options, validates input and dispatches."""
 
 import logging
+import time
 from collections.abc import Callable
 from pathlib import Path
 
@@ -27,6 +28,9 @@ OPTIONS = [
 ]
 VALID_CHOICES = {choice for choice, _ in OPTIONS}
 
+# Lets the user read a short confirmation before the menu is drawn again.
+CONFIRMATION_PAUSE_SECONDS = 0.7
+
 
 class Menu:
     def __init__(
@@ -37,6 +41,7 @@ class Menu:
         config_path: Path | None = None,
         bsod_source: Source[BsodSnapshot] | None = None,
         color: bool = False,
+        sleep_fn: Callable[[float], None] = time.sleep,
     ) -> None:
         self.language = language
         self._input = input_fn
@@ -44,6 +49,7 @@ class Menu:
         self._config_path = config_path
         self._bsod_source = bsod_source or BsodSource()
         self._ui = Ui(color)
+        self._sleep = sleep_fn
 
     def _text(self, key: str) -> str:
         return get_message(key, self.language)
@@ -71,7 +77,8 @@ class Menu:
         index = SUPPORTED_LANGUAGES.index(self.language)
         self.language = SUPPORTED_LANGUAGES[(index + 1) % len(SUPPORTED_LANGUAGES)]
         save_language(self.language, self._config_path)
-        self._say("settings.language_changed", Level.OK)
+        self._say("settings.language_changed", Level.NOTICE)
+        self._sleep(CONFIRMATION_PAUSE_SECONDS)
 
     def show_bsod(self) -> None:
         self._say("bsod.working")

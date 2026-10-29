@@ -26,6 +26,7 @@ class Level(Enum):
     INFO = "info"
     LOG = "log"
     OK = "ok"
+    NOTICE = "notice"
     ERROR = "error"
     TECHNICAL = "technical"
 

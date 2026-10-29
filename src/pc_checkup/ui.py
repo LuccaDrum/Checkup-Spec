@@ -22,6 +22,7 @@ LEVEL_STYLES: dict[Level, str | None] = {
     Level.INFO: None,
     Level.LOG: "30;47",
     Level.OK: "30;42",
+    Level.NOTICE: "97;106",
     Level.ERROR: "1;97;41",
     Level.TECHNICAL: None,
 }

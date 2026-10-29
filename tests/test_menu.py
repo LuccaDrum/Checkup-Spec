@@ -3,7 +3,7 @@ from datetime import datetime
 from pathlib import Path
 
 from pc_checkup.config import load_language
-from pc_checkup.menu import Menu
+from pc_checkup.menu import CONFIRMATION_PAUSE_SECONDS, Menu
 from pc_checkup.models import BsodSnapshot, EventKind, SystemEvent
 from pc_checkup.sources.base import Source, SourceError
 
@@ -37,6 +37,7 @@ def make_menu(
         print_fn=printed.append,
         config_path=config_path,
         bsod_source=source or FakeBsodSource(),
+        sleep_fn=lambda seconds: None,
     )
     return menu, printed, config_path
 
@@ -135,6 +136,7 @@ def make_color_menu(answers: list[str], source: Source[BsodSnapshot]) -> tuple[M
         print_fn=printed.append,
         bsod_source=source,
         color=True,
+        sleep_fn=lambda seconds: None,
     )
     return menu, printed
 
@@ -162,3 +164,41 @@ def test_color_report_has_red_headline_gray_log_and_plain_details() -> None:
     assert "\x1b[30;47m" in text
     assert "\x1b[97;100m" not in text
     assert "Technical details:" in printed
+
+
+def test_language_change_pauses_briefly_so_it_can_be_read(tmp_path: Path) -> None:
+    pauses: list[float] = []
+    answers: Iterator[str] = iter(["7", "0"])
+    menu = Menu(
+        "en",
+        input_fn=lambda prompt: next(answers),
+        print_fn=lambda text: None,
+        config_path=tmp_path / "config.json",
+        bsod_source=FakeBsodSource(),
+        sleep_fn=pauses.append,
+    )
+    menu.run()
+    assert pauses == [CONFIRMATION_PAUSE_SECONDS]
+    assert 0 < CONFIRMATION_PAUSE_SECONDS <= 1
+
+
+def test_language_change_notice_is_white_on_light_cyan(tmp_path: Path) -> None:
+    menu, printed = make_color_menu(["7", "0"], FakeBsodSource())
+    menu.run()
+    notices = [line for line in printed if line.startswith("\x1b[97;106m")]
+    assert len(notices) == 1
+    assert "Idioma alterado" in notices[0]
+
+
+def test_no_pause_without_a_language_change(tmp_path: Path) -> None:
+    pauses: list[float] = []
+    answers: Iterator[str] = iter(["3", "0"])
+    menu = Menu(
+        "en",
+        input_fn=lambda prompt: next(answers),
+        print_fn=lambda text: None,
+        bsod_source=FakeBsodSource(),
+        sleep_fn=pauses.append,
+    )
+    menu.run()
+    assert pauses == []
