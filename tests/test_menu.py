@@ -182,10 +182,10 @@ def test_language_change_pauses_briefly_so_it_can_be_read(tmp_path: Path) -> Non
     assert 0 < CONFIRMATION_PAUSE_SECONDS <= 1
 
 
-def test_language_change_notice_is_white_on_light_cyan(tmp_path: Path) -> None:
+def test_language_change_notice_is_black_on_light_cyan(tmp_path: Path) -> None:
     menu, printed = make_color_menu(["7", "0"], FakeBsodSource())
     menu.run()
-    notices = [line for line in printed if line.startswith("\x1b[97;106m")]
+    notices = [line for line in printed if line.startswith("\x1b[30;106m")]
     assert len(notices) == 1
     assert "Idioma alterado" in notices[0]
 
