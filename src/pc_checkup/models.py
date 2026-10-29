@@ -21,6 +21,14 @@ class SystemEvent:
 
 
 @dataclass(frozen=True)
+class Report:
+    """What the user reads: a friendly part first, technical details below."""
+
+    friendly: tuple[str, ...]
+    technical: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class BsodSnapshot:
     days: int
     events: tuple[SystemEvent, ...]
