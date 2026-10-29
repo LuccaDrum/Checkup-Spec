@@ -20,6 +20,23 @@ class SystemEvent:
     details: str = ""
 
 
+class Level(Enum):
+    """How a line should look: a plain log, a recommendation, or a status color."""
+
+    INFO = "info"
+    HINT = "hint"
+    OK = "ok"
+    WARNING = "warning"
+    ERROR = "error"
+    TECHNICAL = "technical"
+
+
+@dataclass(frozen=True)
+class Line:
+    text: str
+    level: Level = Level.INFO
+
+
 @dataclass(frozen=True)
 class Report:
     """What the user reads: a friendly part first, technical details below."""
