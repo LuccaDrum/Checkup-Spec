@@ -77,6 +77,25 @@ class SsdSnapshot:
     disks: tuple[DiskInfo, ...]
 
 
+class RamOutcome(Enum):
+    NO_ERRORS = "no_errors"
+    ERRORS_FOUND = "errors_found"
+
+
+@dataclass(frozen=True)
+class RamTestResult:
+    time: datetime
+    outcome: RamOutcome
+    event_id: int
+
+
+@dataclass(frozen=True)
+class RamSnapshot:
+    """The newest Windows Memory Diagnostic result, or None if there is none."""
+
+    latest: RamTestResult | None
+
+
 @dataclass(frozen=True)
 class BsodSnapshot:
     days: int
