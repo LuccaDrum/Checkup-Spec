@@ -73,6 +73,26 @@ MESSAGES: dict[str, dict[str, str]] = {
             "Please run it again and accept the Windows permission prompt."
         ),
         "app.press_enter": "Press Enter to close this window...",
+        "action.confirm": "Do you want to continue? (y/n): ",
+        "action.cancelled": "Cancelled. Nothing was changed on your PC.",
+        "action.failed": "Something went wrong and the action could not be completed.",
+        "ram_test.describe": (
+            "The Windows Memory Diagnostic checks your RAM for faults. It needs a restart: "
+            "Windows will ask whether to restart now or later, and the test runs before Windows starts."
+        ),
+        "ram_test.warning": (
+            "The test takes about 10 to 20 minutes and you cannot use the PC meanwhile. "
+            "Save your work first. This program never restarts your PC for you."
+        ),
+        "ram_test.started": (
+            "The Windows tool was opened. Choose when to restart in its window. After the test "
+            "ends and Windows starts again, open this program and choose option 4 to see the result."
+        ),
+        "ram_test.launch_failed": "The Windows Memory Diagnostic could not be started.",
+        "ram_test.not_run_yet": (
+            "The test has not run yet. Restart your PC and let the test finish, then choose option 4 again."
+        ),
+        "ram_test.start_new": "Do you want to start a new test instead? (y/n): ",
         "ram.working": "Reading the last RAM test result...",
         "ram.read_failed": (
             "Could not read the RAM test result. Please try again; "
@@ -238,6 +258,29 @@ MESSAGES: dict[str, dict[str, str]] = {
             "e executar reparos. Execute novamente e aceite o aviso de permissão do Windows."
         ),
         "app.press_enter": "Pressione Enter para fechar esta janela...",
+        "action.confirm": "Deseja continuar? (s/n): ",
+        "action.cancelled": "Cancelado. Nada foi alterado no seu PC.",
+        "action.failed": "Algo deu errado e a ação não pôde ser concluída.",
+        "ram_test.describe": (
+            "O Diagnóstico de Memória do Windows procura falhas na sua RAM. Ele precisa reiniciar: "
+            "o Windows vai perguntar se deseja reiniciar agora ou depois, e o teste roda antes de o "
+            "Windows iniciar."
+        ),
+        "ram_test.warning": (
+            "O teste leva de 10 a 20 minutos e você não pode usar o PC nesse tempo. "
+            "Salve seu trabalho antes. Este programa nunca reinicia o PC por você."
+        ),
+        "ram_test.started": (
+            "A ferramenta do Windows foi aberta. Escolha quando reiniciar na janela dela. "
+            "Depois que o teste terminar e o Windows iniciar de novo, abra este programa e "
+            "escolha a opção 4 para ver o resultado."
+        ),
+        "ram_test.launch_failed": "Não foi possível iniciar o Diagnóstico de Memória do Windows.",
+        "ram_test.not_run_yet": (
+            "O teste ainda não foi executado. Reinicie o PC e deixe o teste terminar; "
+            "depois escolha a opção 4 de novo."
+        ),
+        "ram_test.start_new": "Deseja iniciar um novo teste? (s/n): ",
         "ram.working": "Lendo o resultado do último teste de RAM...",
         "ram.read_failed": (
             "Não foi possível ler o resultado do teste de RAM. Tente novamente; "
