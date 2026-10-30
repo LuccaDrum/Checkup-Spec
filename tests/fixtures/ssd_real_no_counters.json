@@ -1,0 +1,15 @@
+[
+    {
+        "DeviceId":  "0",
+        "Name":  "ETOPSO SSD 256GB",
+        "MediaType":  "SSD",
+        "BusType":  "RAID",
+        "Health":  "Healthy",
+        "SizeBytes":  256060514304,
+        "Wear":  null,
+        "Temperature":  null,
+        "PowerOnHours":  null,
+        "ReadErrorsUncorrected":  null,
+        "WriteErrorsUncorrected":  null
+    }
+]

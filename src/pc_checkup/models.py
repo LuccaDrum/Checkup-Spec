@@ -46,6 +46,38 @@ class Report:
 
 
 @dataclass(frozen=True)
+class DiskInfo:
+    """One physical disk. A reliability counter the drive does not report is None."""
+
+    device_id: str
+    name: str
+    media_type: str
+    bus_type: str
+    health: str
+    size_bytes: int | None = None
+    wear_percent: int | None = None
+    temperature_c: int | None = None
+    power_on_hours: int | None = None
+    read_errors_uncorrected: int | None = None
+    write_errors_uncorrected: int | None = None
+
+    def unreadable_fields(self) -> tuple[str, ...]:
+        readings = {
+            "wear": self.wear_percent,
+            "temperature": self.temperature_c,
+            "power_on_hours": self.power_on_hours,
+            "read_errors": self.read_errors_uncorrected,
+            "write_errors": self.write_errors_uncorrected,
+        }
+        return tuple(name for name, value in readings.items() if value is None)
+
+
+@dataclass(frozen=True)
+class SsdSnapshot:
+    disks: tuple[DiskInfo, ...]
+
+
+@dataclass(frozen=True)
 class BsodSnapshot:
     days: int
     events: tuple[SystemEvent, ...]
