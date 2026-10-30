@@ -4,7 +4,13 @@ from pathlib import Path
 
 from pc_checkup.config import load_language
 from pc_checkup.menu import CONFIRMATION_PAUSE_SECONDS, Menu
-from pc_checkup.models import BsodSnapshot, EventKind, SystemEvent
+from pc_checkup.models import (
+    BsodSnapshot,
+    DiskInfo,
+    EventKind,
+    SsdSnapshot,
+    SystemEvent,
+)
 from pc_checkup.sources.base import Source, SourceError
 
 
@@ -21,11 +27,25 @@ class FakeBsodSource(Source[BsodSnapshot]):
         return self._snapshot
 
 
+class FakeSsdSource(Source[SsdSnapshot]):
+    def __init__(self, snapshot: SsdSnapshot | None = None, fail: bool = False) -> None:
+        self._snapshot = snapshot or SsdSnapshot(disks=())
+        self._fail = fail
+        self.calls = 0
+
+    def fetch(self) -> SsdSnapshot:
+        self.calls += 1
+        if self._fail:
+            raise SourceError("boom")
+        return self._snapshot
+
+
 def make_menu(
     answers: list[str],
     tmp_path: Path,
     language: str = "en",
     source: Source[BsodSnapshot] | None = None,
+    ssd_source: Source[SsdSnapshot] | None = None,
 ) -> tuple[Menu, list[str], Path]:
     """Build a Menu fed by `answers`; returns it with its printed lines and config path."""
     printed: list[str] = []
@@ -37,6 +57,7 @@ def make_menu(
         print_fn=printed.append,
         config_path=config_path,
         bsod_source=source or FakeBsodSource(),
+        ssd_source=ssd_source or FakeSsdSource(),
         sleep_fn=lambda seconds: None,
     )
     return menu, printed, config_path
@@ -64,7 +85,7 @@ def test_input_is_trimmed(tmp_path: Path) -> None:
 
 
 def test_unimplemented_option_says_not_available(tmp_path: Path) -> None:
-    menu, printed, _ = make_menu(["3", "0"], tmp_path)
+    menu, printed, _ = make_menu(["4", "0"], tmp_path)
     menu.run()
     assert "This option is not available yet." in printed
 
@@ -192,7 +213,7 @@ def test_language_change_notice_is_black_on_light_cyan(tmp_path: Path) -> None:
 
 def test_no_pause_without_a_language_change(tmp_path: Path) -> None:
     pauses: list[float] = []
-    answers: Iterator[str] = iter(["3", "0"])
+    answers: Iterator[str] = iter(["4", "0"])
     menu = Menu(
         "en",
         input_fn=lambda prompt: next(answers),
@@ -202,3 +223,45 @@ def test_no_pause_without_a_language_change(tmp_path: Path) -> None:
     )
     menu.run()
     assert pauses == []
+
+
+def healthy_disk_snapshot() -> SsdSnapshot:
+    disk = DiskInfo(
+        device_id="0",
+        name="Sample SSD",
+        media_type="SSD",
+        bus_type="NVMe",
+        health="Healthy",
+        size_bytes=256_000_000_000,
+        wear_percent=5,
+        temperature_c=40,
+        power_on_hours=100,
+        read_errors_uncorrected=0,
+        write_errors_uncorrected=0,
+    )
+    return SsdSnapshot(disks=(disk,))
+
+
+def test_option_3_shows_the_disk_report_without_technical_details(tmp_path: Path) -> None:
+    source = FakeSsdSource(healthy_disk_snapshot())
+    menu, printed, _ = make_menu(["3", "0"], tmp_path, ssd_source=source)
+    menu.run()
+    assert source.calls == 1
+    assert "Reading disk information..." in printed
+    assert "Disk 0: Sample SSD (SSD, 256 GB, NVMe)" in printed
+    assert "Result: the disk looks fine." in printed
+    assert "Technical details:" not in printed
+
+
+def test_option_3_in_portuguese(tmp_path: Path) -> None:
+    source = FakeSsdSource(healthy_disk_snapshot())
+    menu, printed, _ = make_menu(["3", "0"], tmp_path, language="pt", ssd_source=source)
+    menu.run()
+    assert "Resultado: o disco parece estar bem." in printed
+
+
+def test_option_3_failure_shows_friendly_message_and_keeps_running(tmp_path: Path) -> None:
+    menu, printed, _ = make_menu(["3", "0"], tmp_path, ssd_source=FakeSsdSource(fail=True))
+    menu.run()
+    assert any("Could not read the disk information" in line for line in printed)
+    assert printed[-1] == "Goodbye!"
