@@ -1,7 +1,8 @@
-﻿from collections.abc import Iterator
+﻿from collections.abc import Callable, Iterator
 from datetime import datetime
 from pathlib import Path
 
+from pc_checkup.actions.ram_test import RamTestAction
 from pc_checkup.config import load_language
 from pc_checkup.menu import CONFIRMATION_PAUSE_SECONDS, Menu
 from pc_checkup.models import (
@@ -56,6 +57,11 @@ class FakeRamSource(Source[RamSnapshot]):
         return self._snapshot
 
 
+def safe_ram_action(tmp_path: Path) -> RamTestAction:
+    """A RAM action that never opens mdsched and keeps its state in the temp folder."""
+    return RamTestAction(launch_fn=lambda: None, state_path=tmp_path / "ram_state.json")
+
+
 def make_menu(
     answers: list[str],
     tmp_path: Path,
@@ -63,6 +69,8 @@ def make_menu(
     source: Source[BsodSnapshot] | None = None,
     ssd_source: Source[SsdSnapshot] | None = None,
     ram_source: Source[RamSnapshot] | None = None,
+    ram_action: RamTestAction | None = None,
+    ram_source_factory: Callable[[datetime], Source[RamSnapshot]] | None = None,
 ) -> tuple[Menu, list[str], Path]:
     """Build a Menu fed by `answers`; returns it with its printed lines and config path."""
     printed: list[str] = []
@@ -76,6 +84,8 @@ def make_menu(
         bsod_source=source or FakeBsodSource(),
         ssd_source=ssd_source or FakeSsdSource(),
         ram_source=ram_source or FakeRamSource(),
+        ram_action=ram_action or safe_ram_action(tmp_path),
+        ram_source_factory=ram_source_factory,
         sleep_fn=lambda seconds: None,
     )
     return menu, printed, config_path
@@ -103,7 +113,7 @@ def test_input_is_trimmed(tmp_path: Path) -> None:
 
 
 def test_unimplemented_option_says_not_available(tmp_path: Path) -> None:
-    menu, printed, _ = make_menu(["4", "0"], tmp_path)
+    menu, printed, _ = make_menu(["5", "0"], tmp_path)
     menu.run()
     assert "This option is not available yet." in printed
 
@@ -231,7 +241,7 @@ def test_language_change_notice_is_black_on_light_cyan(tmp_path: Path) -> None:
 
 def test_no_pause_without_a_language_change(tmp_path: Path) -> None:
     pauses: list[float] = []
-    answers: Iterator[str] = iter(["4", "0"])
+    answers: Iterator[str] = iter(["5", "0"])
     menu = Menu(
         "en",
         input_fn=lambda prompt: next(answers),
@@ -328,3 +338,116 @@ def test_option_1_shows_the_technical_section_once_at_the_end(tmp_path: Path) ->
     menu.run()
     assert printed.count("Technical details:") == 1
     assert printed.index("Technical details:") > printed.index("Result: nothing to report yet.")
+
+class RamHarness:
+    """A RAM action with a launch counter and its own state file, plus a fake result source."""
+
+    def __init__(self, tmp_path: Path, launch_error: Exception | None = None) -> None:
+        self.launched = 0
+        self.since_asked: list[datetime] = []
+        self.snapshot = RamSnapshot(latest=None)
+        self.fail_read = False
+
+        def launch() -> None:
+            if launch_error:
+                raise launch_error
+            self.launched += 1
+
+        self.action = RamTestAction(
+            launch_fn=launch,
+            state_path=tmp_path / "ram_state.json",
+            now_fn=lambda: datetime(2026, 10, 30, 10, 15).astimezone(),
+        )
+
+    def factory(self, since: datetime) -> Source[RamSnapshot]:
+        self.since_asked.append(since)
+        return FakeRamSource(self.snapshot, fail=self.fail_read)
+
+
+def run_ram_menu(
+    answers: list[str], tmp_path: Path, harness: RamHarness, language: str = "en"
+) -> list[str]:
+    menu, printed, _ = make_menu(
+        answers,
+        tmp_path,
+        language=language,
+        ram_action=harness.action,
+        ram_source_factory=harness.factory,
+    )
+    menu.run()
+    return printed
+
+
+def test_option_4_explains_asks_and_starts_the_test(tmp_path: Path) -> None:
+    ram = RamHarness(tmp_path)
+    printed = run_ram_menu(["4", "y", "0"], tmp_path, ram)
+    assert ram.launched == 1
+    assert ram.action.pending_since() is not None
+    assert any("Windows Memory Diagnostic checks your RAM" in line for line in printed)
+    assert any("10 to 20 minutes" in line for line in printed)
+    assert any("choose option 4" in line for line in printed)
+
+
+def test_option_4_declined_changes_nothing(tmp_path: Path) -> None:
+    ram = RamHarness(tmp_path)
+    printed = run_ram_menu(["4", "n", "0"], tmp_path, ram)
+    assert ram.launched == 0
+    assert ram.action.pending_since() is None
+    assert "Cancelled. Nothing was changed on your PC." in printed
+
+
+def test_option_4_anything_but_yes_counts_as_no(tmp_path: Path) -> None:
+    ram = RamHarness(tmp_path)
+    run_ram_menu(["4", "", "0"], tmp_path, ram)
+    assert ram.launched == 0
+
+
+def test_option_4_accepts_portuguese_yes(tmp_path: Path) -> None:
+    ram = RamHarness(tmp_path)
+    printed = run_ram_menu(["4", "sim", "0"], tmp_path, ram, language="pt")
+    assert ram.launched == 1
+    assert any("Diagnóstico de Memória" in line for line in printed)
+
+
+def test_option_4_launch_failure_is_red_and_leaves_no_pending_test(tmp_path: Path) -> None:
+    ram = RamHarness(tmp_path, launch_error=FileNotFoundError())
+    printed = run_ram_menu(["4", "y", "0"], tmp_path, ram)
+    assert "The Windows Memory Diagnostic could not be started." in printed
+    assert ram.action.pending_since() is None
+
+
+def test_option_4_with_a_pending_test_shows_the_new_result_and_clears_it(tmp_path: Path) -> None:
+    ram = RamHarness(tmp_path)
+    ram.action.run("en")
+    pending = ram.action.pending_since()
+    ram.snapshot = ram_ok_snapshot()
+    printed = run_ram_menu(["4", "0"], tmp_path, ram)
+    assert ram.since_asked == [pending]
+    assert "The last RAM test (2026-10-25 09:12) found no errors." in printed
+    assert ram.action.pending_since() is None
+    assert ram.launched == 1
+
+
+def test_option_4_pending_without_result_says_it_has_not_run(tmp_path: Path) -> None:
+    ram = RamHarness(tmp_path)
+    ram.action.run("en")
+    printed = run_ram_menu(["4", "n", "0"], tmp_path, ram)
+    assert any("The test has not run yet" in line for line in printed)
+    assert ram.action.pending_since() is not None
+    assert ram.launched == 1
+
+
+def test_option_4_pending_without_result_can_start_a_new_test(tmp_path: Path) -> None:
+    ram = RamHarness(tmp_path)
+    ram.action.run("en")
+    run_ram_menu(["4", "y", "y", "0"], tmp_path, ram)
+    assert ram.launched == 2
+
+
+def test_option_4_read_failure_keeps_the_pending_test(tmp_path: Path) -> None:
+    ram = RamHarness(tmp_path)
+    ram.action.run("en")
+    ram.fail_read = True
+    printed = run_ram_menu(["4", "0"], tmp_path, ram)
+    assert any("Could not read the RAM test result" in line for line in printed)
+    assert ram.action.pending_since() is not None

@@ -3,9 +3,11 @@
 import logging
 import time
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 from typing import TypeVar
 
+from pc_checkup.actions.ram_test import RamTestAction
 from pc_checkup.config import save_language
 from pc_checkup.interpreter import interpret_bsod, interpret_ram, interpret_ssd
 from pc_checkup.messages import SUPPORTED_LANGUAGES, get_message
@@ -32,6 +34,7 @@ OPTIONS = [
     ("0", "menu.exit"),
 ]
 VALID_CHOICES = {choice for choice, _ in OPTIONS}
+YES_ANSWERS = {"y", "yes", "s", "sim"}
 
 # Lets the user read a short confirmation before the menu is drawn again.
 CONFIRMATION_PAUSE_SECONDS = 0.7
@@ -49,6 +52,8 @@ class Menu:
         sleep_fn: Callable[[float], None] = time.sleep,
         ssd_source: Source[SsdSnapshot] | None = None,
         ram_source: Source[RamSnapshot] | None = None,
+        ram_action: RamTestAction | None = None,
+        ram_source_factory: Callable[[datetime], Source[RamSnapshot]] | None = None,
     ) -> None:
         self.language = language
         self._input = input_fn
@@ -57,6 +62,8 @@ class Menu:
         self._bsod_source = bsod_source or BsodSource()
         self._ssd_source = ssd_source or SsdSource()
         self._ram_source = ram_source or RamResultSource()
+        self._ram_action = ram_action or RamTestAction()
+        self._ram_source_factory = ram_source_factory or (lambda since: RamResultSource(since=since))
         self._ui = Ui(color)
         self._sleep = sleep_fn
 
@@ -134,6 +141,36 @@ class Menu:
     def show_ssd(self) -> None:
         self._show_check(self._ssd_source, interpret_ssd, "ssd.working", "ssd.read_failed")
 
+    def _show_text(self, text: str, level: Level) -> None:
+        self._print(self._ui.block(text, level))
+
+    def _confirm(self, prompt: str) -> bool:
+        return self._input(self._ui.bold(prompt)).strip().lower() in YES_ANSWERS
+
+    def _start_ram_test(self) -> None:
+        self._ram_action.execute(self.language, self._show_text, self._confirm)
+
+    def show_ram_test(self) -> None:
+        """Phase one starts the test; with a test pending, phase two reads its result."""
+        pending = self._ram_action.pending_since()
+        if pending is None:
+            self._start_ram_test()
+            return
+        self._say("ram.working")
+        try:
+            snapshot = self._ram_source_factory(pending).fetch()
+        except SourceError:
+            logger.exception("Could not read the RAM test result")
+            self._say("ram.read_failed", Level.ERROR)
+            return
+        if snapshot.latest is None:
+            self._say("ram_test.not_run_yet", Level.LOG)
+            if self._confirm(self._text("ram_test.start_new")):
+                self._start_ram_test()
+            return
+        self._print_friendly(interpret_ram(snapshot, self.language))
+        self._ram_action.clear_pending()
+
     def show_full_check(self) -> None:
         """Read-only checks only: friendly results of every section first, technical details last."""
         technical: list[str] = []
@@ -179,6 +216,8 @@ class Menu:
                 self.show_bsod()
             elif choice == "3":
                 self.show_ssd()
+            elif choice == "4":
+                self.show_ram_test()
             elif choice == "7":
                 self.toggle_language()
             else:
