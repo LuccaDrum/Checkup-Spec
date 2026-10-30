@@ -21,6 +21,51 @@ MESSAGES: dict[str, dict[str, str]] = {
         "menu.prompt": "Choose an option: ",
         "menu.invalid": "That is not a valid option. Please type a number from the menu.",
         "menu.not_available": "This option is not available yet.",
+        "ssd.working": "Reading disk information...",
+        "ssd.read_failed": (
+            "Could not read the disk information. Please try again; "
+            "if it keeps failing, ask for technical help."
+        ),
+        "ssd.none": "No physical disks were found.",
+        "ssd.disk": "Disk {id}: {name} ({media}, {size} GB, {bus})",
+        "ssd.health.Healthy": "Windows reports this disk as healthy.",
+        "ssd.health.Warning": "Windows reports a warning for this disk. Back up your files soon.",
+        "ssd.health.Unhealthy": (
+            "Windows reports this disk as unhealthy. Back up your files now and get technical help."
+        ),
+        "ssd.health.unknown": "Windows could not determine the health of this disk.",
+        "ssd.wear": "About {life}% of the drive's life remains.",
+        "ssd.wear.aging": (
+            "About {life}% of the drive's life remains. It is aging; keep your backups up to date."
+        ),
+        "ssd.wear.critical": (
+            "Only about {life}% of the drive's life remains. Replace it soon and back up your files now."
+        ),
+        "ssd.temperature": "Temperature: {value} °C.",
+        "ssd.temperature.hot": "Temperature: {value} °C, which is high. Check ventilation and dust.",
+        "ssd.hours": "Powered on for about {hours} hours ({days} days).",
+        "ssd.errors.none": "No uncorrected read or write errors.",
+        "ssd.errors.found": (
+            "The drive reported {count} read or write errors that could not be corrected. "
+            "Back up your files now."
+        ),
+        "ssd.unreadable": (
+            "Could not read: {fields}. Some drives, especially behind a RAID controller, "
+            "do not share this information with Windows."
+        ),
+        "ssd.field.wear": "wear",
+        "ssd.field.temperature": "temperature",
+        "ssd.field.power_on_hours": "hours of use",
+        "ssd.field.read_errors": "read errors",
+        "ssd.field.write_errors": "write errors",
+        "ssd.verdict.ok": "Result: the disk looks fine.",
+        "ssd.verdict.limited": (
+            "Result: Windows reports the disk as healthy, but without detailed data this check is limited."
+        ),
+        "ssd.verdict.warning": "Result: worth keeping an eye on. Keep your backups up to date.",
+        "ssd.verdict.attention": (
+            "Result: the disk needs attention. Back up your files and get technical help."
+        ),
         "menu.goodbye": "Goodbye!",
         "settings.language_changed": "Language changed to English.",
         "admin.declined": (
@@ -111,6 +156,62 @@ MESSAGES: dict[str, dict[str, str]] = {
         "menu.prompt": "Escolha uma opção: ",
         "menu.invalid": "Essa não é uma opção válida. Digite um número do menu.",
         "menu.not_available": "Esta opção ainda não está disponível.",
+        "ssd.working": "Lendo informações do disco...",
+        "ssd.read_failed": (
+            "Não foi possível ler as informações do disco. Tente novamente; "
+            "se continuar falhando, peça ajuda técnica."
+        ),
+        "ssd.none": "Nenhum disco físico foi encontrado.",
+        "ssd.disk": "Disco {id}: {name} ({media}, {size} GB, {bus})",
+        "ssd.health.Healthy": "O Windows informa que este disco está saudável.",
+        "ssd.health.Warning": (
+            "O Windows informa um aviso para este disco. Faça backup dos seus arquivos em breve."
+        ),
+        "ssd.health.Unhealthy": (
+            "O Windows informa que este disco não está saudável. "
+            "Faça backup dos seus arquivos agora e peça ajuda técnica."
+        ),
+        "ssd.health.unknown": "O Windows não conseguiu determinar a saúde deste disco.",
+        "ssd.wear": "Resta cerca de {life}% da vida útil do disco.",
+        "ssd.wear.aging": (
+            "Resta cerca de {life}% da vida útil do disco. Ele está envelhecendo; "
+            "mantenha seus backups em dia."
+        ),
+        "ssd.wear.critical": (
+            "Resta apenas cerca de {life}% da vida útil do disco. "
+            "Troque-o em breve e faça backup dos seus arquivos agora."
+        ),
+        "ssd.temperature": "Temperatura: {value} °C.",
+        "ssd.temperature.hot": (
+            "Temperatura: {value} °C, o que é alto. Verifique a ventilação e a poeira."
+        ),
+        "ssd.hours": "Ligado há cerca de {hours} horas ({days} dias).",
+        "ssd.errors.none": "Nenhum erro de leitura ou gravação sem correção.",
+        "ssd.errors.found": (
+            "O disco registrou {count} erros de leitura ou gravação que não puderam ser corrigidos. "
+            "Faça backup dos seus arquivos agora."
+        ),
+        "ssd.unreadable": (
+            "Não foi possível ler: {fields}. Alguns discos, principalmente atrás de um controlador "
+            "RAID, não compartilham essa informação com o Windows."
+        ),
+        "ssd.field.wear": "desgaste",
+        "ssd.field.temperature": "temperatura",
+        "ssd.field.power_on_hours": "horas de uso",
+        "ssd.field.read_errors": "erros de leitura",
+        "ssd.field.write_errors": "erros de gravação",
+        "ssd.verdict.ok": "Resultado: o disco parece estar bem.",
+        "ssd.verdict.limited": (
+            "Resultado: o Windows informa que o disco está saudável, "
+            "mas sem dados detalhados esta verificação é limitada."
+        ),
+        "ssd.verdict.warning": (
+            "Resultado: vale ficar de olho. Mantenha seus backups em dia."
+        ),
+        "ssd.verdict.attention": (
+            "Resultado: o disco precisa de atenção. Faça backup dos seus arquivos "
+            "e peça ajuda técnica."
+        ),
         "menu.goodbye": "Até logo!",
         "settings.language_changed": "Idioma alterado para português.",
         "admin.declined": (
