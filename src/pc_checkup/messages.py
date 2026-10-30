@@ -20,7 +20,6 @@ MESSAGES: dict[str, dict[str, str]] = {
         "menu.exit": "Exit",
         "menu.prompt": "Choose an option: ",
         "menu.invalid": "That is not a valid option. Please type a number from the menu.",
-        "menu.not_available": "This option is not available yet.",
         "ssd.working": "Reading disk information...",
         "ssd.read_failed": (
             "Could not read the disk information. Please try again; "
@@ -266,7 +265,6 @@ MESSAGES: dict[str, dict[str, str]] = {
         "menu.exit": "Sair",
         "menu.prompt": "Escolha uma opção: ",
         "menu.invalid": "Essa não é uma opção válida. Digite um número do menu.",
-        "menu.not_available": "Esta opção ainda não está disponível.",
         "ssd.working": "Lendo informações do disco...",
         "ssd.read_failed": (
             "Não foi possível ler as informações do disco. Tente novamente; "

@@ -1,8 +1,12 @@
-﻿from collections.abc import Callable, Iterator
+﻿import subprocess
+from collections.abc import Callable, Iterator
 from datetime import datetime
 from pathlib import Path
 
+from pc_checkup.actions.base import Action
+from pc_checkup.actions.dism import DismAction
 from pc_checkup.actions.ram_test import RamTestAction
+from pc_checkup.actions.sfc import SfcAction
 from pc_checkup.config import load_language
 from pc_checkup.menu import CONFIRMATION_PAUSE_SECONDS, Menu
 from pc_checkup.models import (
@@ -77,6 +81,8 @@ def make_menu(
     ram_source: Source[RamSnapshot] | None = None,
     ram_action: RamTestAction | None = None,
     ram_source_factory: Callable[[datetime], Source[RamSnapshot]] | None = None,
+    sfc_action: Action | None = None,
+    dism_action: Action | None = None,
 ) -> tuple[Menu, list[str], Path]:
     """Build a Menu fed by `answers`; returns it with its printed lines and config path."""
     printed: list[str] = []
@@ -92,6 +98,8 @@ def make_menu(
         ram_source=ram_source or FakeRamSource(),
         ram_action=ram_action or safe_ram_action(tmp_path),
         ram_source_factory=ram_source_factory,
+        sfc_action=sfc_action or SfcAction(run_fn=lambda command, timeout: 0),
+        dism_action=dism_action or DismAction(run_fn=lambda command, timeout: 0),
         sleep_fn=lambda seconds: None,
     )
     return menu, printed, config_path
@@ -116,12 +124,6 @@ def test_input_is_trimmed(tmp_path: Path) -> None:
     menu, printed, _ = make_menu([" 0 "], tmp_path)
     menu.run()
     assert printed[-1] == "Goodbye!"
-
-
-def test_unimplemented_option_says_not_available(tmp_path: Path) -> None:
-    menu, printed, _ = make_menu(["5", "0"], tmp_path)
-    menu.run()
-    assert "This option is not available yet." in printed
 
 
 def test_settings_switches_language_and_saves_it(tmp_path: Path) -> None:
@@ -247,7 +249,7 @@ def test_language_change_notice_is_black_on_light_cyan(tmp_path: Path) -> None:
 
 def test_no_pause_without_a_language_change(tmp_path: Path) -> None:
     pauses: list[float] = []
-    answers: Iterator[str] = iter(["5", "0"])
+    answers: Iterator[str] = iter(["2", "0"])
     menu = Menu(
         "en",
         input_fn=lambda prompt: next(answers),
@@ -499,3 +501,83 @@ def test_read_only_mode_without_a_result_does_not_offer_a_new_test(tmp_path: Pat
     assert any("The test has not run yet" in line for line in printed)
     assert ram.restarts == restarts_before
     assert ram.action.pending_since() is not None
+
+
+class RepairRunner:
+    """Stands in for the real tool: returns a chosen exit code and counts the runs."""
+
+    def __init__(self, code: int = 0, error: Exception | None = None) -> None:
+        self.code = code
+        self.error = error
+        self.runs = 0
+
+    def __call__(self, command: list[str], timeout: int) -> int:
+        self.runs += 1
+        if self.error:
+            raise self.error
+        return self.code
+
+
+def test_option_5_explains_warns_asks_and_runs_sfc(tmp_path: Path) -> None:
+    runner = RepairRunner()
+    menu, printed, _ = make_menu(["5", "y", "0"], tmp_path, sfc_action=SfcAction(run_fn=runner))
+    menu.run()
+    assert runner.runs == 1
+    assert any("System File Checker (SFC) scans" in line for line in printed)
+    assert any("10 to 20 minutes" in line for line in printed)
+    assert any(line.startswith("SFC finished without reporting an error") for line in printed)
+
+
+def test_option_5_declined_runs_nothing(tmp_path: Path) -> None:
+    runner = RepairRunner()
+    menu, printed, _ = make_menu(["5", "n", "0"], tmp_path, sfc_action=SfcAction(run_fn=runner))
+    menu.run()
+    assert runner.runs == 0
+    assert "Cancelled. Nothing was changed on your PC." in printed
+
+
+def test_option_5_failure_shows_the_code_and_the_log(tmp_path: Path) -> None:
+    runner = RepairRunner(code=1)
+    menu, printed, _ = make_menu(["5", "y", "0"], tmp_path, sfc_action=SfcAction(run_fn=runner))
+    menu.run()
+    assert "Exit code: 1 (hex 0x00000001)" in printed
+    assert any("CBS.log" in line for line in printed)
+
+
+def test_option_6_runs_dism_and_tells_when_a_restart_is_needed(tmp_path: Path) -> None:
+    runner = RepairRunner(code=3010)
+    menu, printed, _ = make_menu(["6", "y", "0"], tmp_path, dism_action=DismAction(run_fn=runner))
+    menu.run()
+    assert runner.runs == 1
+    assert any("Restart the PC when you are ready" in line for line in printed)
+    assert printed[-1] == "Goodbye!"
+
+
+def test_option_6_in_portuguese_accepts_sim(tmp_path: Path) -> None:
+    runner = RepairRunner(code=0x800F0906)
+    menu, printed, _ = make_menu(
+        ["6", "sim", "0"], tmp_path, language="pt", dism_action=DismAction(run_fn=runner)
+    )
+    menu.run()
+    assert runner.runs == 1
+    assert any("não conseguiu baixar" in line for line in printed)
+
+
+def test_a_repair_timeout_is_shown_and_the_menu_keeps_running(tmp_path: Path) -> None:
+    runner = RepairRunner(error=subprocess.TimeoutExpired("dism", 1))
+    menu, printed, _ = make_menu(["6", "y", "0"], tmp_path, dism_action=DismAction(run_fn=runner))
+    menu.run()
+    assert any("took too long" in line for line in printed)
+    assert printed[-1] == "Goodbye!"
+
+
+def test_repairs_are_never_started_without_confirmation(tmp_path: Path) -> None:
+    sfc, dism = RepairRunner(), RepairRunner()
+    menu, _, _ = make_menu(
+        ["5", "", "6", "maybe", "0"],
+        tmp_path,
+        sfc_action=SfcAction(run_fn=sfc),
+        dism_action=DismAction(run_fn=dism),
+    )
+    menu.run()
+    assert (sfc.runs, dism.runs) == (0, 0)

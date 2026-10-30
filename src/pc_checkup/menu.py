@@ -7,7 +7,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import TypeVar
 
+from pc_checkup.actions.base import Action
+from pc_checkup.actions.dism import DismAction
 from pc_checkup.actions.ram_test import RamTestAction
+from pc_checkup.actions.sfc import SfcAction
 from pc_checkup.config import save_language
 from pc_checkup.interpreter import interpret_bsod, interpret_ram, interpret_ssd
 from pc_checkup.messages import SUPPORTED_LANGUAGES, get_message
@@ -54,6 +57,8 @@ class Menu:
         ram_source: Source[RamSnapshot] | None = None,
         ram_action: RamTestAction | None = None,
         ram_source_factory: Callable[[datetime], Source[RamSnapshot]] | None = None,
+        sfc_action: Action | None = None,
+        dism_action: Action | None = None,
     ) -> None:
         self.language = language
         self._input = input_fn
@@ -63,6 +68,8 @@ class Menu:
         self._ssd_source = ssd_source or SsdSource()
         self._ram_source = ram_source or RamResultSource()
         self._ram_action = ram_action or RamTestAction()
+        self._sfc_action = sfc_action or SfcAction()
+        self._dism_action = dism_action or DismAction()
         self._ram_source_factory = ram_source_factory or (lambda since: RamResultSource(since=since))
         self._ui = Ui(color)
         self._sleep = sleep_fn
@@ -147,8 +154,12 @@ class Menu:
     def _confirm(self, prompt: str) -> bool:
         return self._input(self._ui.bold(prompt)).strip().lower() in YES_ANSWERS
 
+    def _run_action(self, action: Action) -> None:
+        """Every action explains itself, warns, asks for confirmation and only then runs."""
+        action.execute(self.language, self._show_text, self._confirm)
+
     def _start_ram_test(self) -> None:
-        self._ram_action.execute(self.language, self._show_text, self._confirm)
+        self._run_action(self._ram_action)
 
     def show_ram_test(self, allow_start: bool = True) -> None:
         """Phase one starts the test; with a test pending, phase two reads its result.
@@ -225,7 +236,9 @@ class Menu:
                 self.show_ssd()
             elif choice == "4":
                 self.show_ram_test()
+            elif choice == "5":
+                self._run_action(self._sfc_action)
+            elif choice == "6":
+                self._run_action(self._dism_action)
             elif choice == "7":
                 self.toggle_language()
-            else:
-                self._say("menu.not_available", Level.LOG)
