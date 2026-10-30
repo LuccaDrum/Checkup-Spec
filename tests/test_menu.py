@@ -8,6 +8,9 @@ from pc_checkup.models import (
     BsodSnapshot,
     DiskInfo,
     EventKind,
+    RamOutcome,
+    RamSnapshot,
+    RamTestResult,
     SsdSnapshot,
     SystemEvent,
 )
@@ -40,12 +43,26 @@ class FakeSsdSource(Source[SsdSnapshot]):
         return self._snapshot
 
 
+class FakeRamSource(Source[RamSnapshot]):
+    def __init__(self, snapshot: RamSnapshot | None = None, fail: bool = False) -> None:
+        self._snapshot = snapshot or RamSnapshot(latest=None)
+        self._fail = fail
+        self.calls = 0
+
+    def fetch(self) -> RamSnapshot:
+        self.calls += 1
+        if self._fail:
+            raise SourceError("boom")
+        return self._snapshot
+
+
 def make_menu(
     answers: list[str],
     tmp_path: Path,
     language: str = "en",
     source: Source[BsodSnapshot] | None = None,
     ssd_source: Source[SsdSnapshot] | None = None,
+    ram_source: Source[RamSnapshot] | None = None,
 ) -> tuple[Menu, list[str], Path]:
     """Build a Menu fed by `answers`; returns it with its printed lines and config path."""
     printed: list[str] = []
@@ -58,6 +75,7 @@ def make_menu(
         config_path=config_path,
         bsod_source=source or FakeBsodSource(),
         ssd_source=ssd_source or FakeSsdSource(),
+        ram_source=ram_source or FakeRamSource(),
         sleep_fn=lambda seconds: None,
     )
     return menu, printed, config_path
@@ -265,3 +283,48 @@ def test_option_3_failure_shows_friendly_message_and_keeps_running(tmp_path: Pat
     menu.run()
     assert any("Could not read the disk information" in line for line in printed)
     assert printed[-1] == "Goodbye!"
+
+def ram_ok_snapshot() -> RamSnapshot:
+    result = RamTestResult(
+        time=datetime(2026, 10, 25, 9, 12), outcome=RamOutcome.NO_ERRORS, event_id=1201
+    )
+    return RamSnapshot(latest=result)
+
+
+def test_option_1_runs_every_check_and_puts_technical_details_last(tmp_path: Path) -> None:
+    bsod, ssd, ram = (
+        FakeBsodSource(crash_snapshot()),
+        FakeSsdSource(healthy_disk_snapshot()),
+        FakeRamSource(ram_ok_snapshot()),
+    )
+    menu, printed, _ = make_menu(["1", "0"], tmp_path, source=bsod, ssd_source=ssd, ram_source=ram)
+    menu.run()
+    assert (bsod.calls, ssd.calls, ram.calls) == (1, 1, 1)
+    headings = [
+        printed.index("Blue screens (last 15 days)"),
+        printed.index("SSD health"),
+        printed.index("RAM test"),
+    ]
+    assert headings == sorted(headings)
+    assert "Your PC crashed once in the last 15 days." in printed
+    assert "Result: the disk looks fine." in printed
+    assert "The last RAM test (2026-10-25 09:12) found no errors." in printed
+    technical = printed.index("Technical details:")
+    assert technical > printed.index("Result: the memory looked fine in the last test.")
+
+
+def test_option_1_keeps_going_when_one_section_fails(tmp_path: Path) -> None:
+    ssd = FakeSsdSource(fail=True)
+    ram = FakeRamSource(ram_ok_snapshot())
+    menu, printed, _ = make_menu(["1", "0"], tmp_path, ssd_source=ssd, ram_source=ram)
+    menu.run()
+    assert any("Could not read the disk information" in line for line in printed)
+    assert "The last RAM test (2026-10-25 09:12) found no errors." in printed
+    assert printed[-1] == "Goodbye!"
+
+
+def test_option_1_shows_the_technical_section_once_at_the_end(tmp_path: Path) -> None:
+    menu, printed, _ = make_menu(["1", "0"], tmp_path)
+    menu.run()
+    assert printed.count("Technical details:") == 1
+    assert printed.index("Technical details:") > printed.index("Result: nothing to report yet.")
