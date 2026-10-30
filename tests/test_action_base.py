@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 
 from pc_checkup.actions.base import Action, ActionError
 from pc_checkup.models import Level, Line
@@ -75,9 +75,10 @@ def test_a_failing_action_shows_a_red_message_and_returns_false() -> None:
 
 
 def test_error_can_carry_its_own_message_key() -> None:
-    action = FakeAction(error=ActionError("ram_test.launch_failed"))
+    action = FakeAction(error=ActionError("ram_test.schedule_failed"))
     _, shown, _ = run_flow(action, answer=True)
-    assert shown[-1] == ("The Windows Memory Diagnostic could not be started.", Level.ERROR)
+    assert shown[-1][1] is Level.ERROR
+    assert "could not be scheduled" in shown[-1][0]
 
 
 def test_flow_speaks_portuguese() -> None:

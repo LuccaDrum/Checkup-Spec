@@ -77,18 +77,35 @@ MESSAGES: dict[str, dict[str, str]] = {
         "action.cancelled": "Cancelled. Nothing was changed on your PC.",
         "action.failed": "Something went wrong and the action could not be completed.",
         "ram_test.describe": (
-            "The Windows Memory Diagnostic checks your RAM for faults. It needs a restart: "
-            "Windows will ask whether to restart now or later, and the test runs before Windows starts."
+            "The Windows Memory Diagnostic checks your RAM for faults. To run it, this program "
+            "schedules the test and restarts your PC automatically. After the test, the program "
+            "opens by itself and shows the result."
         ),
         "ram_test.warning": (
-            "The test takes about 10 to 20 minutes and you cannot use the PC meanwhile. "
-            "Save your work first. This program never restarts your PC for you."
+            "Your PC restarts {seconds} seconds after you confirm, and the test then takes about "
+            "10 to 20 minutes, during which the PC cannot be used. Unsaved work will be lost, "
+            "so save and close everything first."
         ),
-        "ram_test.started": (
-            "The Windows tool was opened. Choose when to restart in its window. After the test "
-            "ends and Windows starts again, open this program and choose option 4 to see the result."
+        "ram_test.restarting": (
+            "The test is scheduled. Your PC will restart in {seconds} seconds. Save your work now. "
+            "To cancel the restart, open a terminal and run: shutdown /a "
+            "(the test will still run the next time the PC restarts)."
         ),
-        "ram_test.launch_failed": "The Windows Memory Diagnostic could not be started.",
+        "ram_test.reopens": "After the test, this program opens by itself and shows the result.",
+        "ram_test.autostart_failed": (
+            "The program could not set itself to open after the restart. "
+            "When the test ends, open it and choose option 4 to see the result."
+        ),
+        "ram_test.schedule_failed": (
+            "The memory test could not be scheduled, so your PC was not restarted. "
+            "Nothing was changed."
+        ),
+        "ram_test.restart_failed": (
+            "The test is scheduled, but the PC could not be restarted automatically. "
+            "Restart it yourself when you are ready and the test will run."
+        ),
+        "ram_test.restart_comment": "PC Checkup: restarting to run the Windows Memory Diagnostic.",
+        "ram_test.nothing_pending": "No RAM test is waiting for a result. Choose option 4 to start one.",
         "ram_test.not_run_yet": (
             "The test has not run yet. Restart your PC and let the test finish, then choose option 4 again."
         ),
@@ -262,20 +279,41 @@ MESSAGES: dict[str, dict[str, str]] = {
         "action.cancelled": "Cancelado. Nada foi alterado no seu PC.",
         "action.failed": "Algo deu errado e a ação não pôde ser concluída.",
         "ram_test.describe": (
-            "O Diagnóstico de Memória do Windows procura falhas na sua RAM. Ele precisa reiniciar: "
-            "o Windows vai perguntar se deseja reiniciar agora ou depois, e o teste roda antes de o "
-            "Windows iniciar."
+            "O Diagnóstico de Memória do Windows procura falhas na sua RAM. Para executá-lo, este "
+            "programa agenda o teste e reinicia o PC automaticamente. Depois do teste, o programa "
+            "abre sozinho e mostra o resultado."
         ),
         "ram_test.warning": (
-            "O teste leva de 10 a 20 minutos e você não pode usar o PC nesse tempo. "
-            "Salve seu trabalho antes. Este programa nunca reinicia o PC por você."
+            "O PC reinicia {seconds} segundos depois da sua confirmação, e o teste leva de 10 a 20 "
+            "minutos, sem que o PC possa ser usado. Trabalho não salvo será perdido; "
+            "salve e feche tudo antes."
         ),
-        "ram_test.started": (
-            "A ferramenta do Windows foi aberta. Escolha quando reiniciar na janela dela. "
-            "Depois que o teste terminar e o Windows iniciar de novo, abra este programa e "
-            "escolha a opção 4 para ver o resultado."
+        "ram_test.restarting": (
+            "O teste está agendado. O PC vai reiniciar em {seconds} segundos. Salve seu trabalho "
+            "agora. Para cancelar a reinicialização, abra um terminal e execute: shutdown /a "
+            "(o teste ainda vai rodar na próxima vez que o PC reiniciar)."
         ),
-        "ram_test.launch_failed": "Não foi possível iniciar o Diagnóstico de Memória do Windows.",
+        "ram_test.reopens": (
+            "Depois do teste, este programa abre sozinho e mostra o resultado."
+        ),
+        "ram_test.autostart_failed": (
+            "O programa não conseguiu se configurar para abrir após a reinicialização. "
+            "Quando o teste terminar, abra-o e escolha a opção 4 para ver o resultado."
+        ),
+        "ram_test.schedule_failed": (
+            "Não foi possível agendar o teste de memória, então o PC não foi reiniciado. "
+            "Nada foi alterado."
+        ),
+        "ram_test.restart_failed": (
+            "O teste está agendado, mas não foi possível reiniciar o PC automaticamente. "
+            "Reinicie você mesmo quando quiser e o teste vai rodar."
+        ),
+        "ram_test.restart_comment": (
+            "PC Checkup: reiniciando para executar o Diagnóstico de Memória do Windows."
+        ),
+        "ram_test.nothing_pending": (
+            "Nenhum teste de RAM está aguardando resultado. Escolha a opção 4 para iniciar um."
+        ),
         "ram_test.not_run_yet": (
             "O teste ainda não foi executado. Reinicie o PC e deixe o teste terminar; "
             "depois escolha a opção 4 de novo."

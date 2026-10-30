@@ -59,7 +59,13 @@ class FakeRamSource(Source[RamSnapshot]):
 
 def safe_ram_action(tmp_path: Path) -> RamTestAction:
     """A RAM action that never opens mdsched and keeps its state in the temp folder."""
-    return RamTestAction(launch_fn=lambda: None, state_path=tmp_path / "ram_state.json")
+    return RamTestAction(
+        schedule_fn=lambda: None,
+        restart_fn=lambda comment: None,
+        register_fn=lambda: None,
+        unregister_fn=lambda: None,
+        state_path=tmp_path / "ram_state.json",
+    )
 
 
 def make_menu(
@@ -342,19 +348,26 @@ def test_option_1_shows_the_technical_section_once_at_the_end(tmp_path: Path) ->
 class RamHarness:
     """A RAM action with a launch counter and its own state file, plus a fake result source."""
 
-    def __init__(self, tmp_path: Path, launch_error: Exception | None = None) -> None:
-        self.launched = 0
+    def __init__(self, tmp_path: Path, schedule_error: Exception | None = None) -> None:
+        self.scheduled = 0
+        self.restarts = 0
         self.since_asked: list[datetime] = []
         self.snapshot = RamSnapshot(latest=None)
         self.fail_read = False
 
-        def launch() -> None:
-            if launch_error:
-                raise launch_error
-            self.launched += 1
+        def schedule() -> None:
+            if schedule_error:
+                raise schedule_error
+            self.scheduled += 1
+
+        def restart(comment: str) -> None:
+            self.restarts += 1
 
         self.action = RamTestAction(
-            launch_fn=launch,
+            schedule_fn=schedule,
+            restart_fn=restart,
+            register_fn=lambda: None,
+            unregister_fn=lambda: None,
             state_path=tmp_path / "ram_state.json",
             now_fn=lambda: datetime(2026, 10, 30, 10, 15).astimezone(),
         )
@@ -381,17 +394,17 @@ def run_ram_menu(
 def test_option_4_explains_asks_and_starts_the_test(tmp_path: Path) -> None:
     ram = RamHarness(tmp_path)
     printed = run_ram_menu(["4", "y", "0"], tmp_path, ram)
-    assert ram.launched == 1
+    assert ram.restarts == 1
     assert ram.action.pending_since() is not None
     assert any("Windows Memory Diagnostic checks your RAM" in line for line in printed)
     assert any("10 to 20 minutes" in line for line in printed)
-    assert any("choose option 4" in line for line in printed)
+    assert any("restart in 15 seconds" in line for line in printed)
 
 
 def test_option_4_declined_changes_nothing(tmp_path: Path) -> None:
     ram = RamHarness(tmp_path)
     printed = run_ram_menu(["4", "n", "0"], tmp_path, ram)
-    assert ram.launched == 0
+    assert ram.restarts == 0
     assert ram.action.pending_since() is None
     assert "Cancelled. Nothing was changed on your PC." in printed
 
@@ -399,20 +412,20 @@ def test_option_4_declined_changes_nothing(tmp_path: Path) -> None:
 def test_option_4_anything_but_yes_counts_as_no(tmp_path: Path) -> None:
     ram = RamHarness(tmp_path)
     run_ram_menu(["4", "", "0"], tmp_path, ram)
-    assert ram.launched == 0
+    assert ram.restarts == 0
 
 
 def test_option_4_accepts_portuguese_yes(tmp_path: Path) -> None:
     ram = RamHarness(tmp_path)
     printed = run_ram_menu(["4", "sim", "0"], tmp_path, ram, language="pt")
-    assert ram.launched == 1
+    assert ram.restarts == 1
     assert any("Diagnóstico de Memória" in line for line in printed)
 
 
 def test_option_4_launch_failure_is_red_and_leaves_no_pending_test(tmp_path: Path) -> None:
-    ram = RamHarness(tmp_path, launch_error=FileNotFoundError())
+    ram = RamHarness(tmp_path, schedule_error=OSError("bcdedit failed"))
     printed = run_ram_menu(["4", "y", "0"], tmp_path, ram)
-    assert "The Windows Memory Diagnostic could not be started." in printed
+    assert any("your PC was not restarted" in line for line in printed)
     assert ram.action.pending_since() is None
 
 
@@ -425,7 +438,7 @@ def test_option_4_with_a_pending_test_shows_the_new_result_and_clears_it(tmp_pat
     assert ram.since_asked == [pending]
     assert "The last RAM test (2026-10-25 09:12) found no errors." in printed
     assert ram.action.pending_since() is None
-    assert ram.launched == 1
+    assert ram.restarts == 1
 
 
 def test_option_4_pending_without_result_says_it_has_not_run(tmp_path: Path) -> None:
@@ -434,14 +447,14 @@ def test_option_4_pending_without_result_says_it_has_not_run(tmp_path: Path) -> 
     printed = run_ram_menu(["4", "n", "0"], tmp_path, ram)
     assert any("The test has not run yet" in line for line in printed)
     assert ram.action.pending_since() is not None
-    assert ram.launched == 1
+    assert ram.restarts == 1
 
 
 def test_option_4_pending_without_result_can_start_a_new_test(tmp_path: Path) -> None:
     ram = RamHarness(tmp_path)
     ram.action.run("en")
     run_ram_menu(["4", "y", "y", "0"], tmp_path, ram)
-    assert ram.launched == 2
+    assert ram.restarts == 2
 
 
 def test_option_4_read_failure_keeps_the_pending_test(tmp_path: Path) -> None:
