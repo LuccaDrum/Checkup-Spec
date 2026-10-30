@@ -10,6 +10,8 @@ from pc_checkup.models import (
     EventKind,
     Level,
     Line,
+    RamOutcome,
+    RamSnapshot,
     Report,
     SsdSnapshot,
 )
@@ -38,6 +40,7 @@ BUGCHECK_NAMES: dict[int, str] = {
 VERDICT_LEVELS = {
     "ok": Level.OK,
     "limited": Level.LOG,
+    "unknown": Level.LOG,
     "warning": Level.LOG,
     "attention": Level.LOG,
 }
@@ -269,3 +272,28 @@ def interpret_ssd(snapshot: SsdSnapshot, language: str) -> Report:
             friendly.append(Line(""))
         friendly.extend(_interpret_disk(disk, language))
     return Report(friendly=tuple(friendly))
+
+
+def interpret_ram(snapshot: RamSnapshot, language: str) -> Report:
+    latest = snapshot.latest
+    if latest is None:
+        return Report(
+            friendly=(
+                Line(get_message("ram.none", language), Level.LOG),
+                Line(get_message("ram.verdict.unknown", language), VERDICT_LEVELS["unknown"]),
+            )
+        )
+    when = f"{latest.time:%Y-%m-%d %H:%M}"
+    if latest.outcome is RamOutcome.ERRORS_FOUND:
+        return Report(
+            friendly=(
+                Line(get_message("ram.errors", language, when=when), Level.ERROR),
+                Line(get_message("ram.verdict.attention", language), VERDICT_LEVELS["attention"]),
+            )
+        )
+    return Report(
+        friendly=(
+            Line(get_message("ram.no_errors", language, when=when), Level.LOG),
+            Line(get_message("ram.verdict.ok", language), VERDICT_LEVELS["ok"]),
+        )
+    )

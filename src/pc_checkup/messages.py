@@ -1,4 +1,4 @@
-"""All user-facing text, looked up by key and language.
+﻿"""All user-facing text, looked up by key and language.
 
 No other module should contain text meant for the user. To add a message,
 add the same key to every language in MESSAGES (a test enforces this).
@@ -73,6 +73,25 @@ MESSAGES: dict[str, dict[str, str]] = {
             "Please run it again and accept the Windows permission prompt."
         ),
         "app.press_enter": "Press Enter to close this window...",
+        "ram.working": "Reading the last RAM test result...",
+        "ram.read_failed": (
+            "Could not read the RAM test result. Please try again; "
+            "if it keeps failing, ask for technical help."
+        ),
+        "ram.none": (
+            "No RAM test result was found. Either the test was never run on this PC "
+            "or Windows has not recorded a result yet."
+        ),
+        "ram.no_errors": "The last RAM test ({when}) found no errors.",
+        "ram.errors": (
+            "The last RAM test ({when}) found memory errors. "
+            "This can cause crashes and lost data."
+        ),
+        "ram.verdict.ok": "Result: the memory looked fine in the last test.",
+        "ram.verdict.unknown": "Result: nothing to report yet.",
+        "ram.verdict.attention": (
+            "Result: the RAM may be faulty. Back up your files and get technical help."
+        ),
         "bsod.working": "Reading the Windows event log, this may take a few seconds...",
         "bsod.read_failed": (
             "Could not read the Windows event log. Please try again; "
@@ -219,6 +238,26 @@ MESSAGES: dict[str, dict[str, str]] = {
             "e executar reparos. Execute novamente e aceite o aviso de permissão do Windows."
         ),
         "app.press_enter": "Pressione Enter para fechar esta janela...",
+        "ram.working": "Lendo o resultado do último teste de RAM...",
+        "ram.read_failed": (
+            "Não foi possível ler o resultado do teste de RAM. Tente novamente; "
+            "se continuar falhando, peça ajuda técnica."
+        ),
+        "ram.none": (
+            "Nenhum resultado de teste de RAM foi encontrado. O teste nunca foi executado "
+            "neste PC ou o Windows ainda não registrou um resultado."
+        ),
+        "ram.no_errors": "O último teste de RAM ({when}) não encontrou erros.",
+        "ram.errors": (
+            "O último teste de RAM ({when}) encontrou erros de memória. "
+            "Isso pode causar travamentos e perda de dados."
+        ),
+        "ram.verdict.ok": "Resultado: a memória estava boa no último teste.",
+        "ram.verdict.unknown": "Resultado: nada a informar por enquanto.",
+        "ram.verdict.attention": (
+            "Resultado: a RAM pode estar com defeito. Faça backup dos seus arquivos "
+            "e peça ajuda técnica."
+        ),
         "bsod.working": "Lendo o registro de eventos do Windows, pode levar alguns segundos...",
         "bsod.read_failed": (
             "Não foi possível ler o registro de eventos do Windows. Tente novamente; "
