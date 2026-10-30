@@ -73,6 +73,61 @@ MESSAGES: dict[str, dict[str, str]] = {
             "Please run it again and accept the Windows permission prompt."
         ),
         "app.press_enter": "Press Enter to close this window...",
+        "sfc.describe": (
+            "System File Checker (SFC) scans the protected Windows files and replaces damaged ones "
+            "with a good copy. It does not touch your personal files."
+        ),
+        "sfc.warning": (
+            "It takes about 10 to 20 minutes, sometimes longer, and shows no progress here. "
+            "Do not turn off or restart the PC meanwhile."
+        ),
+        "sfc.done": (
+            "SFC finished without reporting an error. Windows keeps the details of anything "
+            "it repaired in its log file."
+        ),
+        "sfc.failed": (
+            "SFC could not finish the scan or could not repair every file. A usual next step is "
+            "the Windows image repair (option 6), then running SFC again."
+        ),
+        "dism.describe": (
+            "DISM repairs the Windows component store, the copy Windows uses to fix itself. "
+            "It may download files from Windows Update, so you need an internet connection."
+        ),
+        "dism.warning": (
+            "It takes about 10 to 20 minutes, sometimes longer, and may seem stuck at some "
+            "percentages. Do not turn off or restart the PC meanwhile."
+        ),
+        "dism.ok": "The Windows image repair finished successfully. A good next step is SFC (option 5).",
+        "dism.ok_reboot": (
+            "The repair finished, but Windows needs a restart to complete it. "
+            "Restart the PC when you are ready."
+        ),
+        "dism.source_missing": (
+            "Windows could not find the files it needs to repair itself. "
+            "Check the internet connection and try again."
+        ),
+        "dism.download_failed": (
+            "Windows could not download the repair files. Check the internet connection and try again."
+        ),
+        "dism.policy_blocked": (
+            "A rule on this PC (often a company policy) blocks downloading repair files, "
+            "so the repair could not finish."
+        ),
+        "dism.access_denied": (
+            "The repair was denied permission. Close this program and open it again, "
+            "accepting the Windows permission prompt."
+        ),
+        "dism.failed": (
+            "The repair could not be completed. The technical details below can help "
+            "someone who supports your PC."
+        ),
+        "repair.timeout": (
+            "The repair took too long and was stopped. Try again, and if it keeps happening "
+            "ask for technical help."
+        ),
+        "repair.not_found": "The Windows repair tool could not be started.",
+        "repair.technical_code": "Exit code: {code} (hex {hex})",
+        "repair.technical_log": "Log file: {path}",
         "action.confirm": "Do you want to continue? (y/n): ",
         "action.cancelled": "Cancelled. Nothing was changed on your PC.",
         "action.failed": "Something went wrong and the action could not be completed.",
@@ -275,6 +330,65 @@ MESSAGES: dict[str, dict[str, str]] = {
             "e executar reparos. Execute novamente e aceite o aviso de permissão do Windows."
         ),
         "app.press_enter": "Pressione Enter para fechar esta janela...",
+        "sfc.describe": (
+            "O Verificador de Arquivos do Sistema (SFC) examina os arquivos protegidos do Windows "
+            "e troca os danificados por uma cópia boa. Ele não mexe nos seus arquivos pessoais."
+        ),
+        "sfc.warning": (
+            "Leva de 10 a 20 minutos, às vezes mais, e não mostra progresso aqui. "
+            "Não desligue nem reinicie o PC nesse tempo."
+        ),
+        "sfc.done": (
+            "O SFC terminou sem informar erro. O Windows guarda no arquivo de log os detalhes "
+            "do que foi reparado."
+        ),
+        "sfc.failed": (
+            "O SFC não conseguiu concluir a verificação ou não conseguiu reparar todos os arquivos. "
+            "Um próximo passo comum é o reparo da imagem do Windows (opção 6) e depois rodar o SFC "
+            "de novo."
+        ),
+        "dism.describe": (
+            "O DISM repara o repositório de componentes do Windows, a cópia que o Windows usa para "
+            "se consertar. Ele pode baixar arquivos do Windows Update, então é preciso ter internet."
+        ),
+        "dism.warning": (
+            "Leva de 10 a 20 minutos, às vezes mais, e pode parecer travado em algumas porcentagens. "
+            "Não desligue nem reinicie o PC nesse tempo."
+        ),
+        "dism.ok": (
+            "O reparo da imagem do Windows terminou com sucesso. Um bom próximo passo é o SFC (opção 5)."
+        ),
+        "dism.ok_reboot": (
+            "O reparo terminou, mas o Windows precisa reiniciar para concluí-lo. "
+            "Reinicie o PC quando quiser."
+        ),
+        "dism.source_missing": (
+            "O Windows não encontrou os arquivos de que precisa para se reparar. "
+            "Verifique a conexão com a internet e tente novamente."
+        ),
+        "dism.download_failed": (
+            "O Windows não conseguiu baixar os arquivos de reparo. "
+            "Verifique a conexão com a internet e tente novamente."
+        ),
+        "dism.policy_blocked": (
+            "Uma regra deste PC (muitas vezes uma política da empresa) bloqueia o download dos "
+            "arquivos de reparo, então o reparo não pôde terminar."
+        ),
+        "dism.access_denied": (
+            "O reparo teve a permissão negada. Feche este programa e abra-o de novo, "
+            "aceitando o aviso de permissão do Windows."
+        ),
+        "dism.failed": (
+            "Não foi possível concluir o reparo. Os detalhes técnicos abaixo podem ajudar "
+            "quem dá suporte ao seu PC."
+        ),
+        "repair.timeout": (
+            "O reparo demorou demais e foi interrompido. Tente novamente e, se continuar "
+            "acontecendo, peça ajuda técnica."
+        ),
+        "repair.not_found": "Não foi possível iniciar a ferramenta de reparo do Windows.",
+        "repair.technical_code": "Código de saída: {code} (hex {hex})",
+        "repair.technical_log": "Arquivo de log: {path}",
         "action.confirm": "Deseja continuar? (s/n): ",
         "action.cancelled": "Cancelado. Nada foi alterado no seu PC.",
         "action.failed": "Algo deu errado e a ação não pôde ser concluída.",

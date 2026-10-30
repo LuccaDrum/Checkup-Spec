@@ -11,8 +11,12 @@ logger = logging.getLogger(__name__)
 EXIT_CODE_MASK = 0xFFFFFFFF
 
 
+def windows_dir() -> Path:
+    return Path(os.environ.get("SystemRoot", r"C:\Windows"))
+
+
 def system32(name: str) -> str:
-    return str(Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / name)
+    return str(windows_dir() / "System32" / name)
 
 
 def _console_encoding() -> str:

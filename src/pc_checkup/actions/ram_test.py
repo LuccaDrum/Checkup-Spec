@@ -1,4 +1,4 @@
-"""RAM test: schedules the Windows Memory Diagnostic, restarts the PC and reopens afterwards.
+﻿"""RAM test: schedules the Windows Memory Diagnostic, restarts the PC and reopens afterwards.
 
 The test runs before Windows starts, so it has two phases. This action is phase
 one: it records the start, sets the program to reopen after the restart,
@@ -7,7 +7,6 @@ The menu handles phase two by reading the result newer than the recorded start.
 """
 
 import logging
-import os
 import subprocess
 from collections.abc import Callable
 from datetime import datetime
@@ -15,6 +14,7 @@ from pathlib import Path
 
 from pc_checkup import autostart
 from pc_checkup.actions.base import Action, ActionError
+from pc_checkup.actions.command import system32
 from pc_checkup.messages import get_message
 from pc_checkup.models import Level, Line
 from pc_checkup.storage import (
@@ -31,10 +31,6 @@ COMMAND_TIMEOUT_SECONDS = 30
 REOPEN_ARGUMENT = "--show-ram-result"
 
 
-def _system32(name: str) -> str:
-    return str(Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / name)
-
-
 def _run_checked(command: list[str]) -> None:
     """Run a Windows tool without a shell; a failure of any kind becomes an OSError."""
     try:
@@ -49,12 +45,12 @@ def _run_checked(command: list[str]) -> None:
 
 def schedule_memory_test() -> None:
     """Run the memory diagnostic at the next boot only (the same way mdsched does it)."""
-    _run_checked([_system32("bcdedit.exe"), "/bootsequence", "{memdiag}", "/addfirst"])
+    _run_checked([system32("bcdedit.exe"), "/bootsequence", "{memdiag}", "/addfirst"])
 
 
 def restart_pc(comment: str) -> None:
     _run_checked(
-        [_system32("shutdown.exe"), "/r", "/t", str(RESTART_DELAY_SECONDS), "/c", comment]
+        [system32("shutdown.exe"), "/r", "/t", str(RESTART_DELAY_SECONDS), "/c", comment]
     )
 
 
