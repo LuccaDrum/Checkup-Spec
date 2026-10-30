@@ -150,11 +150,18 @@ class Menu:
     def _start_ram_test(self) -> None:
         self._ram_action.execute(self.language, self._show_text, self._confirm)
 
-    def show_ram_test(self) -> None:
-        """Phase one starts the test; with a test pending, phase two reads its result."""
+    def show_ram_test(self, allow_start: bool = True) -> None:
+        """Phase one starts the test; with a test pending, phase two reads its result.
+
+        With allow_start=False it only reads, so it can never restart the PC. That is
+        how the program opens by itself after the restart.
+        """
         pending = self._ram_action.pending_since()
         if pending is None:
-            self._start_ram_test()
+            if allow_start:
+                self._start_ram_test()
+            else:
+                self._say("ram_test.nothing_pending", Level.LOG)
             return
         self._say("ram.working")
         try:
@@ -165,7 +172,7 @@ class Menu:
             return
         if snapshot.latest is None:
             self._say("ram_test.not_run_yet", Level.LOG)
-            if self._confirm(self._text("ram_test.start_new")):
+            if allow_start and self._confirm(self._text("ram_test.start_new")):
                 self._start_ram_test()
             return
         self._print_friendly(interpret_ram(snapshot, self.language))

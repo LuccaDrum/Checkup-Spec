@@ -464,3 +464,38 @@ def test_option_4_read_failure_keeps_the_pending_test(tmp_path: Path) -> None:
     printed = run_ram_menu(["4", "0"], tmp_path, ram)
     assert any("Could not read the RAM test result" in line for line in printed)
     assert ram.action.pending_since() is not None
+
+def test_read_only_mode_without_a_pending_test_never_starts_one(tmp_path: Path) -> None:
+    ram = RamHarness(tmp_path)
+    menu, printed, _ = make_menu(
+        [], tmp_path, ram_action=ram.action, ram_source_factory=ram.factory
+    )
+    menu.show_ram_test(allow_start=False)
+    assert any("No RAM test is waiting for a result" in line for line in printed)
+    assert (ram.scheduled, ram.restarts) == (0, 0)
+    assert ram.action.pending_since() is None
+
+
+def test_read_only_mode_shows_the_result_and_clears_the_record(tmp_path: Path) -> None:
+    ram = RamHarness(tmp_path)
+    ram.action.run("en")
+    ram.snapshot = ram_ok_snapshot()
+    menu, printed, _ = make_menu(
+        [], tmp_path, ram_action=ram.action, ram_source_factory=ram.factory
+    )
+    menu.show_ram_test(allow_start=False)
+    assert "The last RAM test (2026-10-25 09:12) found no errors." in printed
+    assert ram.action.pending_since() is None
+
+
+def test_read_only_mode_without_a_result_does_not_offer_a_new_test(tmp_path: Path) -> None:
+    ram = RamHarness(tmp_path)
+    ram.action.run("en")
+    restarts_before = ram.restarts
+    menu, printed, _ = make_menu(
+        [], tmp_path, ram_action=ram.action, ram_source_factory=ram.factory
+    )
+    menu.show_ram_test(allow_start=False)
+    assert any("The test has not run yet" in line for line in printed)
+    assert ram.restarts == restarts_before
+    assert ram.action.pending_since() is not None

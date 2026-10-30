@@ -1,14 +1,25 @@
 """Entry point for the `checkup` command: admin check, then the menu."""
 
-from collections.abc import Callable
+import argparse
+import sys
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
+from pc_checkup.actions.ram_test import REOPEN_ARGUMENT
 from pc_checkup.admin import is_admin, relaunch_elevated
 from pc_checkup.config import load_language
 from pc_checkup.menu import Menu
 from pc_checkup.messages import get_message
 from pc_checkup.models import Level
 from pc_checkup.ui import Ui, supports_color
+
+
+def parse_args(argv: Sequence[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(prog="checkup", add_help=False)
+    # Internal flag used when the program reopens by itself after the RAM test restart.
+    parser.add_argument(REOPEN_ARGUMENT, action="store_true", help=argparse.SUPPRESS)
+    args, _unknown = parser.parse_known_args(argv)
+    return args
 
 
 def main(
@@ -18,7 +29,9 @@ def main(
     print_fn: Callable[[str], None] = print,
     config_path: Path | None = None,
     color: bool | None = None,
+    argv: Sequence[str] | None = None,
 ) -> int:
+    args = parse_args(sys.argv[1:] if argv is None else argv)
     language = load_language(config_path)
     use_color = supports_color() if color is None else color
     ui = Ui(use_color)
@@ -31,6 +44,8 @@ def main(
         return 1
 
     menu = Menu(language, input_fn, print_fn, config_path, color=use_color)
+    if args.show_ram_result:
+        menu.show_ram_test(allow_start=False)
     menu.run()
     # The elevated window closes when the program ends, so wait before closing.
     input_fn(get_message("app.press_enter", menu.language))
