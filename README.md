@@ -122,6 +122,10 @@ calls, so they pass on any machine.
 - The RAM test result parser has only been checked against a hand-made sample, because the
   Windows Memory Diagnostic has not yet been run on the development PC.
 
+## License
+
+Released under the [MIT License](LICENSE).
+
 ## Out of scope for now
 
 Performance monitoring, history of past runs, comparing runs, notifications, a graphical
