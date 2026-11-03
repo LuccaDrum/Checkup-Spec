@@ -115,7 +115,7 @@ class Menu:
         try:
             snapshot = source.fetch()
         except SourceError:
-            logger.exception("Could not read data for %s", working_key)
+            logger.exception("Could not read %s data", working_key.split(".")[0])
             self._say(failed_key, Level.ERROR)
             return None
         return interpret(snapshot, self.language)

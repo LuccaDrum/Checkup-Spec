@@ -72,6 +72,15 @@ MESSAGES: dict[str, dict[str, str]] = {
             "Please run it again and accept the Windows permission prompt."
         ),
         "app.press_enter": "Press Enter to close this window...",
+        "app.interrupted": "Interrupted. Goodbye!",
+        "app.unexpected_error": (
+            "Something unexpected went wrong. The technical details were saved in this file, "
+            "which you can send to whoever supports your PC: {path}"
+        ),
+        "app.unexpected_error_no_log": (
+            "Something unexpected went wrong, and the technical details could not be saved. "
+            "Please ask for technical help."
+        ),
         "sfc.describe": (
             "System File Checker (SFC) scans the protected Windows files and replaces damaged ones "
             "with a good copy. It does not touch your personal files."
@@ -328,6 +337,15 @@ MESSAGES: dict[str, dict[str, str]] = {
             "e executar reparos. Execute novamente e aceite o aviso de permissão do Windows."
         ),
         "app.press_enter": "Pressione Enter para fechar esta janela...",
+        "app.interrupted": "Interrompido. Até logo!",
+        "app.unexpected_error": (
+            "Algo inesperado deu errado. Os detalhes técnicos foram salvos neste arquivo, "
+            "que você pode enviar a quem dá suporte ao seu PC: {path}"
+        ),
+        "app.unexpected_error_no_log": (
+            "Algo inesperado deu errado, e não foi possível salvar os detalhes técnicos. "
+            "Peça ajuda técnica."
+        ),
         "sfc.describe": (
             "O Verificador de Arquivos do Sistema (SFC) examina os arquivos protegidos do Windows "
             "e troca os danificados por uma cópia boa. Ele não mexe nos seus arquivos pessoais."

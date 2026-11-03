@@ -15,6 +15,7 @@ def run_main(
     admin: bool,
     relaunch_ok: bool = True,
     argv: list[str] | None = None,
+    log_path: Path | None = None,
 ) -> tuple[int, list[str], list[str]]:
     """Run main() with fakes; returns exit code, printed lines and relaunch calls."""
     printed: list[str] = []
@@ -33,6 +34,7 @@ def run_main(
         config_path=tmp_path / "config.json",
         color=False,
         argv=argv or [],
+        setup_logging_fn=lambda: log_path,
     )
     return code, printed, relaunches
 
@@ -74,6 +76,7 @@ class FakeMenu:
     """Records what main() asks the menu to do, so nothing real is read or started."""
 
     calls: ClassVar[list[Any]] = []
+    error: ClassVar[BaseException | None] = None
 
     def __init__(self, language: str, *args: Any, **kwargs: Any) -> None:
         self.language = language
@@ -83,11 +86,14 @@ class FakeMenu:
 
     def run(self) -> None:
         FakeMenu.calls.append("run")
+        if FakeMenu.error:
+            raise FakeMenu.error
 
 
 @pytest.fixture
 def fake_menu(monkeypatch: pytest.MonkeyPatch) -> type[FakeMenu]:
     FakeMenu.calls = []
+    FakeMenu.error = None
     monkeypatch.setattr(cli, "Menu", FakeMenu)
     return FakeMenu
 
@@ -113,3 +119,109 @@ def test_the_flag_without_admin_still_relaunches_first(
     assert code == 0
     assert relaunches == ["called"]
     assert fake_menu.calls == []
+
+
+def test_logging_is_set_up_once_at_the_start(tmp_path: Path) -> None:
+    calls: list[str] = []
+
+    def fake_setup() -> None:
+        calls.append("setup")
+
+    main(
+        is_admin_fn=lambda: True,
+        input_fn=lambda prompt: "0" if prompt.startswith("Choose") else "",
+        print_fn=lambda text: None,
+        config_path=tmp_path / "config.json",
+        color=False,
+        argv=[],
+        setup_logging_fn=fake_setup,
+    )
+    assert calls == ["setup"]
+
+
+def test_an_unexpected_error_shows_a_friendly_message_with_the_log_path(
+    tmp_path: Path, fake_menu: type[FakeMenu], caplog: pytest.LogCaptureFixture
+) -> None:
+    fake_menu.error = RuntimeError("a bug")
+    log_file = tmp_path / "checkup.log"
+    code, printed, _ = run_main([""], tmp_path, admin=True, log_path=log_file)
+    assert code == 1
+    assert any("Something unexpected went wrong" in line and str(log_file) in line for line in printed)
+    assert not any("RuntimeError" in line or "Traceback" in line for line in printed)
+    assert "Unexpected error" in caplog.text
+
+
+def test_an_unexpected_error_without_a_log_file_says_so(
+    tmp_path: Path, fake_menu: type[FakeMenu]
+) -> None:
+    fake_menu.error = RuntimeError("a bug")
+    code, printed, _ = run_main([""], tmp_path, admin=True, log_path=None)
+    assert code == 1
+    assert any("could not be saved" in line for line in printed)
+
+
+def test_the_window_still_waits_for_enter_after_an_error(
+    tmp_path: Path, fake_menu: type[FakeMenu]
+) -> None:
+    fake_menu.error = RuntimeError("a bug")
+    prompts: list[str] = []
+
+    def record(prompt: str) -> str:
+        prompts.append(prompt)
+        return ""
+
+    main(
+        is_admin_fn=lambda: True,
+        input_fn=record,
+        print_fn=lambda text: None,
+        config_path=tmp_path / "config.json",
+        color=False,
+        argv=[],
+        setup_logging_fn=lambda: None,
+    )
+    assert prompts == ["Press Enter to close this window..."]
+
+
+@pytest.mark.parametrize("error", [KeyboardInterrupt(), EOFError()])
+def test_ctrl_c_and_closed_input_end_politely_without_an_error(
+    tmp_path: Path, fake_menu: type[FakeMenu], error: BaseException
+) -> None:
+    fake_menu.error = error
+    code, printed, _ = run_main([""], tmp_path, admin=True)
+    assert code == 0
+    assert "Interrupted. Goodbye!" in printed
+
+
+def test_a_second_ctrl_c_at_the_final_prompt_does_not_crash(
+    tmp_path: Path, fake_menu: type[FakeMenu]
+) -> None:
+    def interrupted(prompt: str) -> str:
+        raise KeyboardInterrupt
+
+    code = main(
+        is_admin_fn=lambda: True,
+        input_fn=interrupted,
+        print_fn=lambda text: None,
+        config_path=tmp_path / "config.json",
+        color=False,
+        argv=[],
+        setup_logging_fn=lambda: None,
+    )
+    assert code == 0
+
+
+def test_declined_uac_does_not_crash_if_the_final_prompt_is_interrupted(tmp_path: Path) -> None:
+    def interrupted(prompt: str) -> str:
+        raise EOFError
+
+    code = main(
+        is_admin_fn=lambda: False,
+        relaunch_fn=lambda: False,
+        input_fn=interrupted,
+        print_fn=lambda text: None,
+        config_path=tmp_path / "config.json",
+        color=False,
+        argv=[],
+        setup_logging_fn=lambda: None,
+    )
+    assert code == 1
